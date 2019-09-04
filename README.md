@@ -6,24 +6,18 @@ Custom plugins for https://github.com/saulpw/visidata/
 
 ### Installation
 
-0. Install VisiData. For now it's preferable to install from the develop branch, which has the most recent plugin support:
+0. Install VisiData. For now it's preferable to install the prerelease [2.x](http://visidata.org/v2.x/) version, which includes plugin support:
 
 ```
-pip install git+ssh://git@github.com/saulpw/visidata.git@develop
+pip3 install git+git://github.com/saulpw/visidata@v2.-1
 ```
 
-or to install via HTTPS:
-
-```
-pip install git+https://github.com/saulpw/visidata.git@develop
-```
-
-Once 2.x goes stable, the simpler `pip install visidata` should be sufficient.
+Once version 2.x goes stable, the simpler `pip3 install visidata` should be sufficient.
 
 1. Install [s3fs](https://s3fs.readthedocs.io):
 
 ```
-pip install s3fs
+pip3 install s3fs
 ```
 
 2. Copy `vds3.py` to your VisiData directory (by default, `~/.visidata`).
