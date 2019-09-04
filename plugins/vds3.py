@@ -6,11 +6,22 @@ is more limited than local paths, but supports:
 * Opening supported filetypes, including compressed files
 '''
 
-from contextlib import suppress
 from functools import lru_cache
 
 from s3fs import S3FileSystem
-from visidata import *
+
+from visidata import (
+    ENTER,
+    Column,
+    Path,
+    Sheet,
+    asyncthread,
+    date,
+    error,
+    getGlobals,
+    status,
+    warning,
+)
 
 
 class S3Path(Path):
@@ -18,19 +29,20 @@ class S3Path(Path):
     A Path-like object representing an S3 file (object) or directory (prefix).
     '''
 
-    # We generally only need one S3 filesystem object
-    _fs = lru_cache()(S3FileSystem)
+    # Ideally we want to create a filesystem object once, then reuse it for
+    # subsequent S3 operations across any number of paths. Setting up a cache
+    # here enables that.
+    fs = lru_cache()(S3FileSystem)
 
     def __init__(self, path):
         super().__init__(path)
-        self.fs = self.__class__._fs()
+        self.fs = self.__class__.fs()
         self.given = path
 
     def open(self, *args, **kwargs):
         '''
         Open the current S3 path, decompressing along the way if needed.
         '''
-
         fp = self.fs.open(self.given)
 
         if self.compression == 'gz':
@@ -51,9 +63,16 @@ class S3Path(Path):
         return fp
 
     def exists(self):
+        '''
+        Return true if this S3 path is an existing directory (prefix)
+        or file (object).
+        '''
         return self.fs.exists(str(self.given))
 
     def is_dir(self):
+        '''
+        Return True if this S3 path is a directory (prefix).
+        '''
         return self.fs.isdir(str(self.given))
 
 
@@ -70,7 +89,7 @@ class S3DirSheet(Sheet):
         Column('size', type=int, getter=lambda col, row: row.get('Size')),
         Column('modtime', type=date, getter=lambda col, row: row.get('LastModified')),
     ]
-    nKeys = 2
+    nKeys = 1
 
     @asyncthread
     def reload(self):
@@ -85,17 +104,14 @@ class S3DirSheet(Sheet):
             entry for entry in self.source.fs.ls(basepath, detail=True, refresh=True)
         ]
 
-    def restat(self, row):
-        vstat.cache_clear()
-
 
 S3DirSheet.addCommand(
-    ENTER, 'open-row', 'vd.push(openSource("s3://" + cursorRow["Key"]))'
+    ENTER, 'open-row', 'vd.push(openSource("s3://{}".format(cursorRow["Key"])))'
 )
 S3DirSheet.addCommand(
     'g' + ENTER,
     'open-rows',
-    'for r in selectedRows: vd.push(openSource("s3://" + r["Key"]))',
+    'for r in selectedRows: vd.push(openSource("s3://{}".format(r["Key"])))',
 )
 
 
