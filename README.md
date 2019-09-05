@@ -12,6 +12,12 @@ Custom plugins for https://github.com/saulpw/visidata/
 pip3 install git+git://github.com/saulpw/visidata@v2.-1
 ```
 
+In case of any surprise behavior, it is also worth testing against `develop`:
+
+```
+pip3 install git+git://github.com/saulpw/visidata@develop
+```
+
 Once version 2.x goes stable, the simpler `pip3 install visidata` should be sufficient.
 
 1. Install [s3fs](https://s3fs.readthedocs.io):

@@ -6,10 +6,6 @@ is more limited than local paths, but supports:
 * Opening supported filetypes, including compressed files
 '''
 
-from functools import lru_cache
-
-from s3fs import S3FileSystem
-
 from visidata import (
     ENTER,
     Column,
@@ -29,10 +25,7 @@ class S3Path(Path):
     A Path-like object representing an S3 file (object) or directory (prefix).
     '''
 
-    # Ideally we want to create a filesystem object once, then reuse it for
-    # subsequent S3 operations across any number of paths. Setting up a cache
-    # here enables that.
-    fs = lru_cache()(S3FileSystem)
+    fs = None
 
     def __init__(self, path):
         super().__init__(path)
@@ -43,7 +36,11 @@ class S3Path(Path):
         '''
         Open the current S3 path, decompressing along the way if needed.
         '''
-        fp = self.fs.open(self.given)
+
+        # Default to text mode unless we have a compressed file
+        mode = 'rb' if self.compression else 'r'
+
+        fp = self.fs.open(self.given, mode=mode)
 
         if self.compression == 'gz':
             import gzip
@@ -120,8 +117,12 @@ def openurl_s3(p, filetype):
     Open a sheet for an S3 path. S3 directories (prefixes) require special handling,
     but files (objects) can use standard VisiData "open" functions.
     '''
+    from s3fs import S3FileSystem
 
-    p = S3Path(p.url)
+    if not S3Path.fs:
+        S3Path.fs = S3FileSystem
+
+    p = S3Path(p.given)
     if not p.exists():
         error('"%s" does not exist, and creating S3 files is not supported' % p.given)
 
