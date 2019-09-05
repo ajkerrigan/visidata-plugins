@@ -43,7 +43,7 @@ class S3Path(Path):
         '''
         Open the current S3 path, decompressing along the way if needed.
         '''
-        fp = self.fs.open(self.given)
+        fp = self.fs.open(self.given, mode='r')
 
         if self.compression == 'gz':
             import gzip
