@@ -26,12 +26,18 @@ Once version 2.x goes stable, the simpler `pip3 install visidata` should be suff
 pip3 install s3fs
 ```
 
-2. Copy `vds3.py` to your VisiData directory (by default, `~/.visidata`).
+2. Copy `vds3.py` to a `plugins` location inside your VisiData directory (by default, `~/.visidata`):
+
+```bash
+mkdir -p ~/.visidata/plugins
+cd path/to/visidata-plugins
+cp plugins/vds3.py ~/.visidata/plugins
+```
 
 3. Add this line to your `~/.visidatarc` file:
 
 ```python
-from vds3 import openurl_s3
+from plugins.vds3 import openurl_s3
 ```
 
 ### Usage
