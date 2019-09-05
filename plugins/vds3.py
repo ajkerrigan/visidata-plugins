@@ -121,7 +121,7 @@ def openurl_s3(p, filetype):
     but files (objects) can use standard VisiData "open" functions.
     '''
 
-    p = S3Path(p.url)
+    p = S3Path(p.given)
     if not p.exists():
         error('"%s" does not exist, and creating S3 files is not supported' % p.given)
 
