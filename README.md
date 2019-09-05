@@ -46,3 +46,17 @@ vd 's3://my-bucket/path/to/file.json.gz'
 vd 's3://my-bucket'
 vd 's3://my-bucket/path'
 ```
+
+### Status
+
+This plugin is in a "minimally viable" state - focused on basic S3 read operations. Reading directly from S3 into pandas/dask dataframes is not currently supported, nor is _writing_ to S3.
+
+### Contributing
+
+Please open an issue for any bugs, questions or feature requests. Pull requests welcome!
+
+### Acknowledgements
+
+* VisiData is a slick tool - @saulpw and contributors have done a great job with it.
+* @jsvine's [intro tutorial](https://jsvine.github.io/intro-to-visidata/) and [plugins repo](https://github.com/jsvine/visidata-plugins) are excellent references.
+* Dask's [s3fs](https://github.com/dask/s3fs/) is a great foundation when you need to squint and pretend S3 is a filesystem.
