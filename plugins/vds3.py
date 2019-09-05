@@ -6,8 +6,6 @@ is more limited than local paths, but supports:
 * Opening supported filetypes, including compressed files
 '''
 
-from functools import lru_cache
-
 from visidata import (
     ENTER,
     Column,
@@ -27,9 +25,6 @@ class S3Path(Path):
     A Path-like object representing an S3 file (object) or directory (prefix).
     '''
 
-    # Ideally we want to create a filesystem object once, then reuse it for
-    # subsequent S3 operations across any number of paths. Setting up a cache
-    # here enables that.
     fs = None
 
     def __init__(self, path):
@@ -41,7 +36,11 @@ class S3Path(Path):
         '''
         Open the current S3 path, decompressing along the way if needed.
         '''
-        fp = self.fs.open(self.given, mode='r')
+
+        # Default to text mode unless we have a compressed file
+        mode = 'rb' if self.compression else 'r'
+
+        fp = self.fs.open(self.given, mode=mode)
 
         if self.compression == 'gz':
             import gzip
