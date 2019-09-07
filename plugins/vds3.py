@@ -14,10 +14,13 @@ from visidata import (
     asyncthread,
     date,
     error,
+    addGlobals,
     getGlobals,
     status,
     warning,
 )
+
+__version__ = '0.1'
 
 
 class S3Path(Path):
@@ -141,3 +144,9 @@ def openurl_s3(p, filetype):
     vs = getGlobals()[openfunc](p)
     status('opening %s as %s' % (p.given, filetype))
     return vs
+
+addGlobals({
+    "openurl_s3": openurl_s3,
+    "S3Path": S3Path,
+    "S3DirSheet": S3DirSheet
+})
