@@ -30,7 +30,7 @@ This plugin can be installed using VisiData's built-in plugin framework, or manu
 vd --plugins-url https://raw.githubusercontent.com/ajkerrigan/visidata/develop/plugins/plugins.tsv
 ```
 
-**Note:** The custom plugin URL is only necessary until saulpw/visidata#351 gets merged.
+**Note:** The custom plugin URL is only necessary until [saulpw/visidata#351](https://github.com/saulpw/visidata/pull/351) gets merged.
 
 2. Hit `<Space>`, type `open-plugins` and hit `<Enter>` to open the plugins sheet.
 
