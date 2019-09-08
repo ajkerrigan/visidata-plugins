@@ -2,23 +2,43 @@
 
 Custom plugins for https://github.com/saulpw/visidata/
 
-## vds3 - Open Amazon S3 paths and objects directly
+## vds3: Open Amazon S3 paths and objects
 
 ### Installation
 
-0. Install VisiData. For now it's preferable to install the prerelease [2.x](http://visidata.org/v2.x/) version, which includes plugin support:
+#### Install VisiData
 
-```
-pip3 install git+git://github.com/saulpw/visidata@v2.-1
-```
+This plugin is designed to work with the plugin framework coming with the [2.x](http://visidata.org/v2.x/) release.
 
-In case of any surprise behavior, it is also worth testing against `develop`:
+Due to some recent upstream changes, I recommend installing from the `develop` branch:
 
 ```
 pip3 install git+git://github.com/saulpw/visidata@develop
 ```
 
-Once version 2.x goes stable, the simpler `pip3 install visidata` should be sufficient.
+Once we see a stable VisiData 2.x release, the simpler `pip3 install visidata` should be sufficient.
+
+### Install the Plugin
+
+This plugin can be installed using VisiData's built-in plugin framework, or manually.
+
+##### Using the Plugin Framework (Recommended)
+
+1. Run VisiData with a custom plugin URL:
+
+```
+vd --plugins-url https://raw.githubusercontent.com/ajkerrigan/visidata/develop/plugins/plugins.tsv
+```
+
+**Note:** The custom plugin URL is only necessary until saulpw/visidata#351 gets merged.
+
+2. Hit `<Space>`, type `open-plugins` and hit `<Enter>` to open the plugins sheet.
+
+3. Scroll to the `vds3` plugin and hit `a` to add it.
+
+4. Wait for installation to complete, and restart VisiData.
+
+##### Manually
 
 1. Install [s3fs](https://s3fs.readthedocs.io):
 
@@ -28,7 +48,7 @@ pip3 install s3fs
 
 2. Copy `vds3.py` to a `plugins` location inside your VisiData directory (by default, `~/.visidata`):
 
-```bash
+```
 mkdir -p ~/.visidata/plugins
 cd path/to/visidata-plugins
 cp plugins/vds3.py ~/.visidata/plugins
@@ -37,7 +57,7 @@ cp plugins/vds3.py ~/.visidata/plugins
 3. Add this line to your `~/.visidatarc` file:
 
 ```python
-from plugins.vds3 import openurl_s3
+import plugins.vds3
 ```
 
 ### Usage
