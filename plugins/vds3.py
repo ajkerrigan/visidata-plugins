@@ -98,11 +98,12 @@ class S3DirSheet(Sheet):
         the S3 filesystem, to avoid using cached responses and missing recent changes.
         '''
 
-        self.reset()  # reset deferred caches
         basepath = str(self.source)
-        self.rows = [
-            entry for entry in self.source.fs.ls(basepath, detail=True, refresh=True)
-        ]
+
+        # Add rows one at a time here, as plugins may hook into addRow.
+        self.rows = []
+        for entry in self.source.fs.ls(basepath, detail=True, refresh=True):
+            self.addRow(entry)
 
 
 S3DirSheet.addCommand(
