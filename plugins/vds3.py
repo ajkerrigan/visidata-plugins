@@ -17,10 +17,11 @@ from visidata import (
     addGlobals,
     getGlobals,
     status,
+    vd,
     warning,
 )
 
-__version__ = '0.1'
+__version__ = '0.2'
 
 
 class S3Path(Path):
@@ -32,7 +33,6 @@ class S3Path(Path):
 
     def __init__(self, path):
         super().__init__(path)
-        self.fs = self.__class__.fs()
         self.given = path
 
     def open(self, *args, **kwargs):
@@ -124,7 +124,7 @@ def openurl_s3(p, filetype):
     from s3fs import S3FileSystem
 
     if not S3Path.fs:
-        S3Path.fs = S3FileSystem
+        S3Path.fs = S3FileSystem()
 
     p = S3Path(p.given)
     if not p.exists():
@@ -135,6 +135,11 @@ def openurl_s3(p, filetype):
 
     if p.is_dir():
         return S3DirSheet(p.name, source=p)
+
+    # Try vd.filetypes first, then open_<ext>. Default to open_txt.
+    openfunc = vd.filetypes.get(filetype.lower())
+    if openfunc:
+        return openfunc(p.given, source=p)
 
     openfunc = 'open_' + filetype.lower()
     if openfunc not in getGlobals():
