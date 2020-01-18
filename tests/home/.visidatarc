@@ -1,0 +1,3 @@
+import plugins.vds3
+
+options.vds3_endpoint = 'http://localhost:3000'

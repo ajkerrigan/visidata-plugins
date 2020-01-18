@@ -1,0 +1,7 @@
+pytest
+git+git://github.com/saulpw/visidata@develop
+boto3
+s3fs
+moto[server]
+awscli-plugin-endpoint
+-e .

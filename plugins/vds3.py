@@ -6,22 +6,18 @@ is more limited than local paths, but supports:
 * Opening supported filetypes, including compressed files
 '''
 
-from visidata import (
-    ENTER,
-    Column,
-    Path,
-    Sheet,
-    asyncthread,
-    date,
-    error,
-    addGlobals,
-    getGlobals,
-    status,
-    vd,
-    warning,
-)
+from visidata import (ENTER, Column, Path, Sheet, addGlobals, asyncthread,
+                      date, error, getGlobals, option, options, status, vd,
+                      warning)
 
 __version__ = '0.2'
+
+option(
+    'vds3_endpoint',
+    '',
+    'alternate S3 endpoint, used for local testing or alternative S3-compatible services',
+    replay=True,
+)
 
 
 class S3Path(Path):
@@ -124,7 +120,10 @@ def openurl_s3(p, filetype):
     from s3fs import S3FileSystem
 
     if not S3Path.fs:
-        S3Path.fs = S3FileSystem()
+        endpoint = options.vds3_endpoint
+        S3Path.fs = S3FileSystem(
+            client_kwargs=(endpoint and {'endpoint_url': endpoint})
+        )
 
     p = S3Path(p.given)
     if not p.exists():
@@ -151,8 +150,5 @@ def openurl_s3(p, filetype):
     status('opening %s as %s' % (p.given, filetype))
     return vs
 
-addGlobals({
-    "openurl_s3": openurl_s3,
-    "S3Path": S3Path,
-    "S3DirSheet": S3DirSheet
-})
+
+addGlobals({"openurl_s3": openurl_s3, "S3Path": S3Path, "S3DirSheet": S3DirSheet})
