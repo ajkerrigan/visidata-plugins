@@ -125,3 +125,6 @@ dmypy.json
 
 # VS Code settings
 **/.vscode
+
+tests/home/Library
+tests/home/.z
