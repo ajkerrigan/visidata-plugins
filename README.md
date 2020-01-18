@@ -24,19 +24,25 @@ This plugin can be installed using VisiData's built-in plugin framework, or manu
 
 ##### Using the Plugin Framework (Recommended)
 
-1. Run VisiData with a custom plugin URL:
+1. Start VisiData.
 
 ```
-vd --plugins-url https://raw.githubusercontent.com/ajkerrigan/visidata/develop/plugins/plugins.tsv
+vd
 ```
-
-**Note:** The custom plugin URL is only necessary until [saulpw/visidata#351](https://github.com/saulpw/visidata/pull/351) gets merged.
 
 2. Hit `<Space>`, type `open-plugins` and hit `<Enter>` to open the plugins sheet.
 
 3. Scroll to the `vds3` plugin and hit `a` to add it.
 
-4. Wait for installation to complete, and restart VisiData.
+4. Wait for installation to complete, then exit VisiData.
+
+5. Be sure that your `~/.visidatarc` file contains the line:
+
+```python
+import plugins
+```
+
+6. Restart VisiData.
 
 ##### Manually
 
@@ -70,6 +76,12 @@ Be sure that the AWS CLI is [installed](https://docs.aws.amazon.com/cli/latest/u
 
 ```
 vd 's3://my-bucket/path/to/file.json.gz'
+```
+
+#### List all buckets
+
+```
+vd 's3://'
 ```
 
 #### Browse a bucket's contents
