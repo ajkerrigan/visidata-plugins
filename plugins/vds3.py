@@ -10,7 +10,7 @@ from visidata import (ENTER, Column, Path, Sheet, addGlobals, asyncthread,
                       date, error, getGlobals, option, options, status, vd,
                       warning)
 
-__version__ = '0.2'
+__version__ = '0.3'
 
 option(
     'vds3_endpoint',
