@@ -10,7 +10,7 @@ from visidata import (ENTER, Column, Path, Sheet, addGlobals, asyncthread,
                       date, error, getGlobals, option, options, status, vd,
                       warning)
 
-__version__ = '0.2'
+__version__ = '0.3'
 
 option(
     'vds3_endpoint',
@@ -18,6 +18,7 @@ option(
     'alternate S3 endpoint, used for local testing or alternative S3-compatible services',
     replay=True,
 )
+option('vds3_glob', True, 'enable glob-matching for S3 paths', replay=True)
 
 
 class S3Path(Path):
@@ -57,6 +58,12 @@ class S3Path(Path):
             return lzma.open(fp, *args, **kwargs)
 
         return fp
+
+    def glob(self):
+        '''
+        Perform glob-matching against this path.
+        '''
+        return self.fs.glob(str(self.given))
 
     def exists(self):
         '''
@@ -102,6 +109,37 @@ class S3DirSheet(Sheet):
             self.addRow(entry)
 
 
+class S3GlobSheet(S3DirSheet):
+    '''
+    Display a listing of S3 objects matching a given glob pattern. Display full
+    key names rather than S3DirSheet's "directory-browsing" behavior.
+    Allow single or multiple entries to be opened in separate sheets.
+    '''
+
+    rowtype = 'files'
+    columns = [
+        Column('name', getter=lambda col, row: row.get('Key')),
+        Column('type', getter=lambda col, row: row.get('type')),
+        Column('size', type=int, getter=lambda col, row: row.get('Size')),
+        Column('modtime', type=date, getter=lambda col, row: row.get('LastModified')),
+    ]
+    nKeys = 1
+
+    @asyncthread
+    def reload(self):
+        '''
+        Refreshes the current S3 directory (prefix) listing. Forces a refresh from
+        the S3 filesystem, to avoid using cached responses and missing recent changes.
+        '''
+
+        basepath = str(self.source)
+
+        # Add rows one at a time here, as plugins may hook into addRow.
+        self.rows = []
+        for entry in self.source.fs.glob(basepath, refresh=True):
+            self.addRow(self.source.fs.stat(entry))
+
+
 S3DirSheet.addCommand(
     ENTER, 'open-row', 'vd.push(openSource("s3://{}".format(cursorRow["Key"])))'
 )
@@ -117,23 +155,28 @@ def openurl_s3(p, filetype):
     Open a sheet for an S3 path. S3 directories (prefixes) require special handling,
     but files (objects) can use standard VisiData "open" functions.
     '''
+    import re
     from s3fs import S3FileSystem
 
     if not S3Path.fs:
         endpoint = options.vds3_endpoint
         S3Path.fs = S3FileSystem(
-            client_kwargs=(endpoint and {'endpoint_url': endpoint})
+            client_kwargs=({'endpoint_url': endpoint} if endpoint else None)
         )
 
     p = S3Path(p.given)
+
+    if options.vds3_glob and re.search(r'[*?\[\]]', p.given):
+        return S3GlobSheet(p.name, source=p)
+
     if not p.exists():
         error('"%s" does not exist, and creating S3 files is not supported' % p.given)
 
-    if not filetype:
-        filetype = p.ext or 'txt'
-
     if p.is_dir():
         return S3DirSheet(p.name, source=p)
+
+    if not filetype:
+        filetype = p.ext or 'txt'
 
     # Try vd.filetypes first, then open_<ext>. Default to open_txt.
     openfunc = vd.filetypes.get(filetype.lower())
