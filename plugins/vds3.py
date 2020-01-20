@@ -85,14 +85,20 @@ class S3DirSheet(Sheet):
     Allow single or multiple entries to be opened in separate sheets.
     '''
 
-    rowtype = 'files'
-    columns = [
-        Column('name', getter=lambda col, row: row.get('Key').rpartition('/')[2]),
-        Column('type', getter=lambda col, row: row.get('type')),
-        Column('size', type=int, getter=lambda col, row: row.get('Size')),
-        Column('modtime', type=date, getter=lambda col, row: row.get('LastModified')),
-    ]
-    nKeys = 1
+    def __init__(self, name, source):
+        super().__init__(name=name, source=source)
+        self.rowtype = 'files'
+        self.columns = [
+            Column('name', getter=self.__class__.object_display_name),
+            Column('type', getter=lambda col, row: row.get('type')),
+            Column('size', type=int, getter=lambda col, row: row.get('Size')),
+            Column('modtime', type=date, getter=lambda col, row: row.get('LastModified')),
+        ]
+        self.nKeys = 1
+
+    @staticmethod
+    def object_display_name(col, row):
+        return row.get('Key').rpartition('/')[2]
 
     @asyncthread
     def reload(self):
@@ -116,14 +122,9 @@ class S3GlobSheet(S3DirSheet):
     Allow single or multiple entries to be opened in separate sheets.
     '''
 
-    rowtype = 'files'
-    columns = [
-        Column('name', getter=lambda col, row: row.get('Key')),
-        Column('type', getter=lambda col, row: row.get('type')),
-        Column('size', type=int, getter=lambda col, row: row.get('Size')),
-        Column('modtime', type=date, getter=lambda col, row: row.get('LastModified')),
-    ]
-    nKeys = 1
+    @staticmethod
+    def object_display_name(col, row):
+        return row.get('Key')
 
     @asyncthread
     def reload(self):
