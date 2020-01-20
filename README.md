@@ -91,6 +91,37 @@ vd 's3://my-bucket'
 vd 's3://my-bucket/path'
 ```
 
+When browsing a bucket, VisiData will behave like a file explorer:
+
+`Enter`: Opens the current file or directory as a new sheet.  
+`g+Enter`: Open all selected files and directories.
+
+`q`'s behavior is unchanged (closes the current sheet), but while browsing a bucket it effectively becomes the "go up one level" command.
+
+#### Browse all CSV files in a bucket (glob matching)
+
+```
+vd 's3://my-bucket/**/*.csv.gz
+```
+
+Since glob-matching can return results from multiple "directories" (S3 prefixes), the glob results sheet will display full object names rather than imitating a navigable directory hierarchy.
+
+### Configuration
+
+This plugin's behavior can be tweaked with the following options:
+
+`vds3_glob` (Default: `True`): Enable glob matching for S3 paths. Glob-matching will only kick in for path names which contain glob patterns (`*`, `?`, `[` or `]`). However, it's possible to have S3 keys which *contain* those characters. In those cases, set this to `False` to explicitly disable glob-matching.
+
+`vds3_endpoint` (Default: `None`): Specify a custom S3 endpoint. This can be useful for local testing, or for pairing this plugin with S3-compatible endpoints such as MinIO, Backblaze B2, etc.
+
+Options can be configured directly in a `~/.visidatarc` file:
+
+```python
+options.vds3_glob = False
+```
+
+VisiData also supports changing options at runtime at a global level or per-sheet. Jeremy Singer-Vine's [tutorial](https://jsvine.github.io/intro-to-visidata/advanced/configuring-visidata/) is a helpful reference.
+
 ### Status
 
 This plugin is in a "minimally viable" state - focused on basic S3 read operations. Reading directly from S3 into pandas/dask dataframes is not currently supported, nor is _writing_ to S3.
