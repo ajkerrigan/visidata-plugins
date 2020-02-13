@@ -18,7 +18,7 @@ pip3 install git+git://github.com/saulpw/visidata@develop
 
 Once we see a stable VisiData 2.x release, the simpler `pip3 install visidata` should be sufficient.
 
-### Install the Plugin
+#### Install the Plugin
 
 This plugin can be installed using VisiData's built-in plugin framework, or manually.
 
@@ -126,11 +126,49 @@ VisiData also supports changing options at runtime at a global level or per-shee
 
 This plugin is in a "minimally viable" state - focused on basic S3 read operations. Reading directly from S3 into pandas/dask dataframes is not currently supported, nor is _writing_ to S3.
 
-### Contributing
+## kvpairs: Toggle values between lists of Key/Value pairs and dicts
+
+### Overview
+
+This plugin adds a pair of column-level convenience functions (`from_entries` and `to_entries`), which are similar to their [jq counterparts](https://stedolan.github.io/jq/manual/#to_entries,from_entries,with_entries). As of this writing, they're most useful for helping to break out tags from AWS API responses. For that specific case, this custom keybinding is a handy shortcut that composes with VisiData's existing "expand column" logic:
+
+```python
+Sheet.addCommand(
+    "gz(",
+    "expand-tags",
+    "expand_cols_deep(sheet, [sheet.colsByName['Tags'].from_entries()], cursorRow)"
+)
+```
+
+In that scenario, assume we have a `Tags` column whose data looks like this:
+
+```json
+[
+    {"Key": "Environment", "Value": "production"},
+    {"Key": "Name", "Value": "my-project"}
+]
+```
+
+`from_entries()` turns that into this:
+
+```json
+{
+    "Environment": "production",
+    "Name": "my-project"
+}
+```
+
+And VisiData's `expand_cols_deep()` function (bound by default to `(`) breaks that into `Tags.Environment` and `Tags.Name` columns, so each tag becomes a first-class VisiData column.
+
+### Installation
+
+The `kvpairs` plugin is not currently included in VisiData's plugin framework. It can be installed manually by copying [kvpairs.py](plugins/kvpairs.py) to your local `~/.visidata/plugins` directory and including `import plugins.kvpairs` in your `~/.visidatarc` file.
+
+## Contributing
 
 Please open an issue for any bugs, questions or feature requests. Pull requests welcome!
 
-### Acknowledgements
+## Acknowledgements
 
 * VisiData is a slick tool - @saulpw and contributors have done a great job with it.
 * @jsvine's [intro tutorial](https://jsvine.github.io/intro-to-visidata/) and [plugins repo](https://github.com/jsvine/visidata-plugins) are excellent references.
