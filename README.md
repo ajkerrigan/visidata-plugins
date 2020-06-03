@@ -5,6 +5,7 @@ Custom plugins for https://github.com/saulpw/visidata/
 * [vds3](#vds3-open-amazon-s3-paths-and-objects): Open Amazon S3 paths and objects
 * [kvpairs](#kvpairs-toggle-values-between-lists-of-keyvalue-pairs-and-dicts): Toggle between key/value pairs and dicts
 * [vfake_extensions](#vfake_extensions-niche-addons-for-vfake): Niche addons for [vfake](https://github.com/saulpw/visidata/blob/develop/plugins/vfake.py)
+* [vpager](#vpager-open-long-cell-values-in-the-system-pager): Open long cell values in the system pager
 
 ## vds3: Open Amazon S3 paths and objects
 
@@ -183,6 +184,24 @@ This plugin won't be included in VisiData, and probably shouldn't be added manua
 `VdCustomProvider` could be a helpful reference if you have a need to define your own custom Faker generator functions for use with vfake.
 
 The `autofake` functionality can save a lot of time if you repeatedly generate fake data for values that follow predictable patterns.
+
+## vpager: Open long cell values in the system pager
+
+### Overview
+
+For cells that contain long strings, it can sometimes be easier to pass the value into an external viewer rather than relying on VisiData's line wrapping. This plugin lets `z^O` open a cell value in the system pager (the value of the `PAGER` environment variable, or `less` by default).
+
+### Installation
+
+* Option 1: Include the contents of [vpager.py](plugins/vpager.py) in your `~/.visidatarc` file.
+* Option 2:
+  * Copy [vpager.py](plugins/vpager.py) to your local `~/.visidata/plugins` directory.
+  * Add `import plugins.vpager` to `~/.visidata/plugins/__init__.py`
+  * Add `import plugins` to `~/.visidatarc` if it is not there already
+
+### Usage
+
+Navigate to a cell with a long value and hit `z^O` (`z`, `Ctrl-o`) to open it with the default system pager. To open with a different program, update your `PAGER` environment variable.
 
 ## Contributing
 
