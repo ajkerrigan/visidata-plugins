@@ -2,6 +2,10 @@
 
 Custom plugins for https://github.com/saulpw/visidata/
 
+* [vds3](#vds3-open-amazon-s3-paths-and-objects): Open Amazon S3 paths and objects
+* [kvpairs](#kvpairs-toggle-values-between-lists-of-keyvalue-pairs-and-dicts): Toggle between key/value pairs and dicts
+* [vfake_extensions](#vfake_extensions-niche-addons-for-vfake): Niche addons for [vfake](https://github.com/saulpw/visidata/blob/develop/plugins/vfake.py)
+
 ## vds3: Open Amazon S3 paths and objects
 
 ### Installation
@@ -163,6 +167,22 @@ And VisiData's `expand_cols_deep()` function (bound by default to `(`) breaks th
 ### Installation
 
 The `kvpairs` plugin is not currently included in VisiData's plugin framework. It can be installed manually by copying [kvpairs.py](plugins/kvpairs.py) to your local `~/.visidata/plugins` directory and including `import plugins.kvpairs` in your `~/.visidatarc` file.
+
+## vfake_extensions: Niche addons for vfake
+
+### Overview
+
+VisiData's [vfake](https://github.com/saulpw/visidata/blob/develop/plugins/vfake.py) plugin provides interactive access to some common [Faker](faker.readthedocs.io/) functionality. The extra bits in vfake_extensions are some personal customizations. They skew heavily toward AWS and are probably most useful as a reference/inspiration for other vfake customizations.
+
+### Installation
+
+This plugin won't be included in VisiData, and probably shouldn't be added manually as-is either. If you find any pieces useful, transplant them into your own `~/.visidatarc` file or personal plugin collection inside `~/.visidata/plugins`.
+
+### Usage
+
+`VdCustomProvider` could be a helpful reference if you have a need to define your own custom Faker generator functions for use with vfake.
+
+The `autofake` functionality can save a lot of time if you repeatedly generate fake data for values that follow predictable patterns.
 
 ## Contributing
 
