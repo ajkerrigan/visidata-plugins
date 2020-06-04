@@ -187,6 +187,10 @@ This plugin won't be included in VisiData, and probably shouldn't be added manua
 
 The `autofake` functionality can save a lot of time if you repeatedly generate fake data for values that follow predictable patterns.
 
+### Autofake Demo
+
+[![asciicast](https://asciinema.org/a/MXZCY6yT6AEduQhuCYQlWGHHH.svg)](https://asciinema.org/a/MXZCY6yT6AEduQhuCYQlWGHHH)
+
 ## vpager: Open long cell values in the system pager
 
 ### Overview
