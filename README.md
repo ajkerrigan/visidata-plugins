@@ -11,6 +11,16 @@ Custom plugins for https://github.com/saulpw/visidata/
 
 ## vds3: Open Amazon S3 paths and objects
 
+### Demo
+
+Browse S3 with an interface like a console-based file explorer:
+
+[![asciicast](https://asciinema.org/a/Cw1njUzYDHvkRrjoKAykYHKe4.svg)](https://asciinema.org/a/Cw1njUzYDHvkRrjoKAykYHKe4)
+
+Use glob-matching to focus your search:
+
+[![asciicast](https://asciinema.org/a/yjPEjpDa5p45dCe7Sad8NYEQd.svg)](https://asciinema.org/a/yjPEjpDa5p45dCe7Sad8NYEQd)
+
 ### Installation
 
 #### Install VisiData
@@ -127,7 +137,13 @@ Options can be configured directly in a `~/.visidatarc` file:
 options.vds3_glob = False
 ```
 
-VisiData also supports changing options at runtime at a global level or per-sheet. Jeremy Singer-Vine's [tutorial](https://jsvine.github.io/intro-to-visidata/advanced/configuring-visidata/) is a helpful reference.
+Or specified at runtime:
+
+```bash
+vd --vds3-glob false 's3://my-bucket/file[?].json'
+```
+
+VisiData also supports changing options from the Options sheet inside the application. Jeremy Singer-Vine's [tutorial](https://jsvine.github.io/intro-to-visidata/advanced/configuring-visidata/) is a helpful reference for that.
 
 ### Status
 
