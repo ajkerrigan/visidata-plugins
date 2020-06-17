@@ -282,6 +282,7 @@ Please open an issue for any bugs, questions or feature requests. Pull requests 
 
 ## Acknowledgements
 
-* VisiData is a slick tool - @saulpw and contributors have done a great job with it.
+* VisiData is a slick tool - @saulpw, @anjakefala and other contributors have done a great job with it.
 * @jsvine's [intro tutorial](https://jsvine.github.io/intro-to-visidata/) and [plugins repo](https://github.com/jsvine/visidata-plugins) are excellent references.
 * Dask's [s3fs](https://github.com/dask/s3fs/) is a great foundation when you need to squint and pretend S3 is a filesystem.
+* Thanks to @geekscrapy for helping to test and improve these plugins.
