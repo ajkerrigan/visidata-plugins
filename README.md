@@ -195,7 +195,7 @@ VisiData's [vfake](https://github.com/saulpw/visidata/blob/develop/plugins/vfake
 
 ### Installation
 
-This plugin won't be included in VisiData, and probably shouldn't be added manually as-is either. If you find any pieces useful, transplant them into your own `~/.visidatarc` file or personal plugin collection inside `~/.visidata/plugins`.
+This plugin won't be included in VisiData, and probably shouldn't be added manually as-is either. If you find any pieces of [vfake_extensions.py](plugins/vfake_extensions.py) useful, transplant them into your own `~/.visidatarc` file or personal plugin collection inside `~/.visidata/plugins`.
 
 ### Usage
 
