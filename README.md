@@ -272,9 +272,15 @@ Once the debugger is active, you can start poking around right away or continue 
 
 VisiData's [split window](https://www.visidata.org/blog/2020/splitwin/) feature enables interesting use cases like displaying a data set and frequency table simultaneously, or a master list of records and a child view of details. In that second case, it can be useful to keep focus in the child/detail view while navigating up and down in the parent view. This little plugin sets up keybindings for that.
 
-### Demo
+### Demos
+
+#### Master/Detail Split Navigation
 
 [![asciicast](https://asciinema.org/a/C18e5aAOwKXTAr4njekNQXWLt.svg)](https://asciinema.org/a/C18e5aAOwKXTAr4njekNQXWLt)
+
+#### Frequency Table "Zoom" Navigation
+
+[![asciicast](https://asciinema.org/a/hS2cSpo7rHI2FN0piscFSlRm5.svg)](https://asciinema.org/a/hS2cSpo7rHI2FN0piscFSlRm5)
 
 ## Contributing
 
@@ -285,4 +291,4 @@ Please open an issue for any bugs, questions or feature requests. Pull requests 
 * VisiData is a slick tool - [saulpw](https://github.com/saulpw), [anjakefala](https://github.com/anjakefala) and other contributors have done a great job with it.
 * [jsvine](https://github.com/jsvine)'s [intro tutorial](https://jsvine.github.io/intro-to-visidata/) and [plugins repo](https://github.com/jsvine/visidata-plugins) are excellent references.
 * Dask's [s3fs](https://github.com/dask/s3fs/) is a great foundation when you need to squint and pretend S3 is a filesystem.
-* Thanks to [geekscrapy](https://github.com/geekscrapy) for helping to test and improve these plugins.
+* Thanks to [geekscrapy](https://github.com/geekscrapy) and [frosencrantz](https://github.com/frosencrantz) for testing and helping to improve these plugins.
