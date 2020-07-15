@@ -5,6 +5,7 @@ import shutil
 import subprocess
 
 import boto3
+import botocore
 import pytest
 
 import plugins
@@ -12,6 +13,7 @@ import plugins
 JSON_SAMPLE = 'tests/sample.json'
 BUCKET = 'visidata-test'
 KEY = 'nested/folders/sample.json'
+BOTO_CONFIG = botocore.config.Config(retries=dict(max_attempts=10))
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -25,11 +27,16 @@ def moto_s3():
         yield
         proc.kill()
 
+
 @pytest.fixture(scope='session')
 def s3_resource():
     return boto3.resource(
-        's3', region_name='us-east-1', endpoint_url='http://localhost:3000'
+        's3',
+        region_name='us-east-1',
+        config=BOTO_CONFIG,
+        endpoint_url='http://localhost:3000',
     )
+
 
 def test_local_roundtrip(tmp_path):
     '''
