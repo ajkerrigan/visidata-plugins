@@ -1,6 +1,6 @@
 # VisiData Plugins
 
-![](https://github.com/ajkerrigan/visidata-plugins/workflows/Python%20Package/badge.svg)
+![](https://github.com/ajkerrigan/visidata-plugins/workflows/CI%20Tests/badge.svg)
 
 Custom plugins for https://github.com/saulpw/visidata/
 
