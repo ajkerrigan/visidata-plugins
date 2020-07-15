@@ -1,5 +1,6 @@
 pytest
-git+git://github.com/saulpw/visidata@v2.-2.1
+pytest-env
+git+https://github.com/saulpw/visidata@v2.-3.0
 boto3
 s3fs
 moto[server]
