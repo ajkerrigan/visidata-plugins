@@ -6,11 +6,26 @@ is more limited than local paths, but supports:
 * Opening supported filetypes, including compressed files
 '''
 
-from visidata import (ENTER, Column, Path, Sheet, addGlobals, asyncthread,
-                      date, error, getGlobals, option, options, status, vd,
-                      warning)
+from visidata import (
+    ENTER,
+    Column,
+    Path,
+    Sheet,
+    VisiData,
+    addGlobals,
+    asyncthread,
+    date,
+    error,
+    getGlobals,
+    open_txt,
+    option,
+    options,
+    status,
+    vd,
+    warning,
+)
 
-__version__ = '0.3'
+__version__ = '0.4'
 
 option(
     'vds3_endpoint',
@@ -88,12 +103,6 @@ class S3DirSheet(Sheet):
     def __init__(self, name, source):
         super().__init__(name=name, source=source)
         self.rowtype = 'files'
-        self.columns = [
-            Column('name', getter=self.__class__.object_display_name),
-            Column('type', getter=lambda col, row: row.get('type')),
-            Column('size', type=int, getter=lambda col, row: row.get('Size')),
-            Column('modtime', type=date, getter=lambda col, row: row.get('LastModified')),
-        ]
         self.nKeys = 1
 
     @staticmethod
@@ -101,23 +110,35 @@ class S3DirSheet(Sheet):
         return row.get('Key').rpartition('/')[2]
 
     @asyncthread
-    def reload(self):
-        '''
-        Refreshes the current S3 directory (prefix) listing. Forces a refresh from
-        the S3 filesystem, to avoid using cached responses and missing recent changes.
-        '''
-
-        basepath = str(self.source)
-
+    def loadRows(self):
         # Add rows one at a time here, as plugins may hook into addRow.
         self.rows = []
-        for entry in self.source.fs.ls(basepath, detail=True, refresh=True):
+        for entry in self.source.fs.ls(str(self.source), detail=True, refresh=True):
             self.addRow(entry)
+
+    @asyncthread
+    def reload(self):
+        '''
+        Refresh the current S3 directory (prefix) listing. Force a refresh from
+        the S3 filesystem to avoid using cached responses and missing recent changes.
+        '''
+        self.columns = []
+        for col in (
+            Column('name', getter=self.__class__.object_display_name),
+            Column('type', getter=lambda col, row: row.get('type')),
+            Column('size', type=int, getter=lambda col, row: row.get('Size')),
+            Column(
+                'modtime', type=date, getter=lambda col, row: row.get('LastModified')
+            ),
+        ):
+            self.addColumn(col)
+
+        self.loadRows()
 
 
 class S3GlobSheet(S3DirSheet):
     '''
-    Display a listing of S3 objects matching a given glob pattern. Display full
+    A listing of S3 objects matching a given glob pattern. Display full
     key names rather than S3DirSheet's "directory-browsing" behavior.
     Allow single or multiple entries to be opened in separate sheets.
     '''
@@ -127,17 +148,10 @@ class S3GlobSheet(S3DirSheet):
         return row.get('Key')
 
     @asyncthread
-    def reload(self):
-        '''
-        Refreshes the current S3 directory (prefix) listing. Forces a refresh from
-        the S3 filesystem, to avoid using cached responses and missing recent changes.
-        '''
-
-        basepath = str(self.source)
-
+    def loadRows(self):
         # Add rows one at a time here, as plugins may hook into addRow.
         self.rows = []
-        for entry in self.source.fs.glob(basepath, refresh=True):
+        for entry in self.source.fs.glob(str(self.source), refresh=True):
             self.addRow(self.source.fs.stat(entry))
 
 
@@ -171,7 +185,7 @@ def openurl_s3(p, filetype):
         return S3GlobSheet(p.name, source=p)
 
     if not p.exists():
-        error('"%s" does not exist, and creating S3 files is not supported' % p.given)
+        error(f'"{p.given}" does not exist, and creating S3 files is not supported')
 
     if p.is_dir():
         return S3DirSheet(p.name, source=p)
@@ -179,20 +193,15 @@ def openurl_s3(p, filetype):
     if not filetype:
         filetype = p.ext or 'txt'
 
-    # Try vd.filetypes first, then open_<ext>. Default to open_txt.
-    openfunc = vd.filetypes.get(filetype.lower())
-    if openfunc:
-        return openfunc(p.given, source=p)
-
-    openfunc = 'open_' + filetype.lower()
-    if openfunc not in getGlobals():
-        warning('no %s function' % openfunc)
+    openfunc = getGlobals().get('open_' + filetype.lower())
+    if not openfunc:
+        warning(f'no loader found for {filetype} files, falling back to txt')
         filetype = 'txt'
-        openfunc = 'open_txt'
+        openfunc = open_txt
 
-    vs = getGlobals()[openfunc](p)
-    status('opening %s as %s' % (p.given, filetype))
+    vs = openfunc(p)
+    status(f'opening {p.given} as {filetype}')
     return vs
 
 
-addGlobals({"openurl_s3": openurl_s3, "S3Path": S3Path, "S3DirSheet": S3DirSheet})
+addGlobals(globals())
