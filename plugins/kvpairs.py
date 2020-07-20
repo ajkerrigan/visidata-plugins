@@ -5,7 +5,7 @@ the from_entries and to_entries functions in jq:
 https://stedolan.github.io/jq/manual/#to_entries,from_entries,with_entries
 '''
 
-from visidata import vd, Column, SettableColumn, Sheet
+from visidata import Column, SettableColumn, Sheet, isNullFunc, vd
 
 
 @Column.api
@@ -20,20 +20,34 @@ def from_entries(col):
     sheet = col.sheet
     rows = sheet.rows
 
+    key_keynames = ('key', 'name')
+    NOT_FOUND = object()
+
     def _die():
         sheet.columns.pop(new_idx)
         vd.fail(f'Columns {col.name} is not a list of Key/Value pairs')
 
     new_idx = sheet.columns.index(col) + 1
     new_col = sheet.addColumn(SettableColumn(col.name), index=new_idx)
-    for r in rows:
-        v = col.getValue(r)
-        if not isinstance(v, list):
+    isNull = isNullFunc()
+    for row in rows:
+        val = col.getValue(row)
+        new_val = {}
+        if isNull(val):
+            continue
+        if not isinstance(val, list):
             _die()
-        try:
-            new_col.setValue(r, {entry['Key']: entry['Value'] for entry in v})
-        except KeyError:
-            _die()
+        for pair in val:
+            col_key = col_value = NOT_FOUND
+            for k, v in pair.items():
+                if k.lower() in key_keynames:
+                    col_key = v
+                elif k.lower() == 'value':
+                    col_value = v
+            if col_key is NOT_FOUND or col_value is NOT_FOUND:
+                _die()
+            new_val[col_key] = col_value
+        new_col.setValue(row, new_val)
     col.hide()
     return new_col
 
@@ -51,8 +65,11 @@ def to_entries(col):
 
     new_idx = sheet.columns.index(col) + 1
     new_col = sheet.addColumn(SettableColumn(col.name), index=new_idx)
+    isNull = isNullFunc()
     for r in rows:
         val = col.getValue(r)
+        if isNull(val):
+            continue
         if not isinstance(val, dict):
             sheet.columns.pop(new_idx)
             vd.fail('Column "{}" is not a dict'.format(col.name))
