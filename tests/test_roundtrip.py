@@ -1,6 +1,5 @@
 import gzip
 import json
-import os
 import shutil
 import subprocess
 
@@ -44,7 +43,7 @@ def test_local_roundtrip(tmp_path):
     as expected before getting S3 into the mix.
     '''
     out = tmp_path / 'sample.json'
-    p = subprocess.run(['vd', '-b', JSON_SAMPLE, '-o', out])
+    subprocess.run(['vd', '-b', JSON_SAMPLE, '-o', out])
     with open(JSON_SAMPLE, 'r') as f1, open(out, 'r') as f2:
         assert json.load(f1) == json.load(f2)
 

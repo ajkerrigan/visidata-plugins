@@ -78,5 +78,5 @@ def to_entries(col):
     return new_col
 
 
-Sheet.addCommand("z(", "setcol-fromentries", "cursorCol.from_entries()")
-Sheet.addCommand("z)", "setcol-toentries", "cursorCol.to_entries()")
+Sheet.addCommand("z{", "setcol-fromentries", "cursorCol.from_entries()")
+Sheet.addCommand("z}", "setcol-toentries", "cursorCol.to_entries()")

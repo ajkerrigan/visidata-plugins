@@ -32,6 +32,12 @@ option(
     replay=True,
 )
 option('vds3_glob', True, 'enable glob-matching for S3 paths', replay=True)
+option(
+    'vds3_version_aware',
+    False,
+    'work with all object versions, rather than only the latest',
+    replay=True,
+)
 
 
 class S3Path(Path):
