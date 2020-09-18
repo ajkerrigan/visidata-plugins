@@ -47,7 +47,12 @@ class VdCustomProvider(BaseProvider):
         return self.hexify(f"eni-{'^' * 17}")
 
 
-options.vfake_extra_providers = [AmazonWebServicesProvider, VdCustomProvider]
+try:
+    import plugins.vfake
+
+    options.vfake_extra_providers = [AmazonWebServicesProvider, VdCustomProvider]
+except Exception as err:
+    vd.warning(f'Error importing vfake dependency for vfake_extensions: {err}')
 
 ### Helper condition checker functions for autofake
 
