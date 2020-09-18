@@ -90,7 +90,8 @@ faketype_mapping = {
 
 
 @asyncthread
-def autofake(cols, rows):
+@BaseSheet.api
+def autofake(sheet, cols, rows):
     '''
     Try to guess an appropriate vfake faketype for a given column and row set.
     If we find a match, run with it. NO REGERTS.
@@ -118,7 +119,5 @@ BaseSheet.addCommand(
     "setcol-fake-all",
     'cursorCol.setValuesFromFaker(input("faketype: ", type="faketype"), rows)',
 )
-BaseSheet.addCommand(
-    'z^F', 'setcol-autofake', f'{__name__}.autofake([cursorCol], rows)'
-)
-BaseSheet.addCommand('gz^F', 'setcols-autofake', f'{__name__}.autofake(columns, rows)')
+BaseSheet.addCommand('z^F', 'setcol-autofake', f'sheet.autofake([cursorCol], rows)')
+BaseSheet.addCommand('gz^F', 'setcols-autofake', f'sheet.autofake(columns, rows)')
