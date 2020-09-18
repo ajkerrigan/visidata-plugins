@@ -2,10 +2,24 @@ import ipaddress
 import re
 from contextlib import suppress
 
+from visidata import BaseSheet, asyncthread, input, options, vd
+
 from faker.providers import BaseProvider
 from faker_cloud import AmazonWebServicesProvider
 
-from visidata import BaseSheet, asyncthread, input, isNullFunc, options, vd
+
+def _isNullFunc():
+    '''
+    isNullFunc is available as a sheet property in newer VisiData releases, but
+    was previously a function in the "visidata" module. Try to use the sheet
+    property, but fall back to support earlier versions.
+    '''
+    try:
+        return vd.sheet.isNullFunc()
+    except AttributeError:
+        import visidata
+
+        return visidata.isNullFunc()
 
 
 class VdCustomProvider(BaseProvider):
@@ -97,7 +111,7 @@ def autofake(sheet, cols, rows):
     If we find a match, run with it. NO REGERTS.
     '''
 
-    isNull = isNullFunc()
+    isNull = _isNullFunc()
     for col in cols:
         faketype = None
         with suppress(StopIteration):
