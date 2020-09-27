@@ -130,8 +130,8 @@ class S3DirSheet(Sheet):
         '''
         row_data = (
             (
-                self.source.fs.stat(entry)
-                for entry in self.source.fs.glob(str(self.source), refresh=True)
+                self.source.fs.stat(entry, refresh=True)
+                for entry in self.source.fs.glob(str(self.source))
             )
             if self.use_glob_matching
             else self.source.fs.ls(str(self.source), detail=True, refresh=True)
@@ -151,7 +151,7 @@ class S3DirSheet(Sheet):
             r'[*?\[\]]', self.source.given
         )
 
-        if not (self.use_glob_matching or self.source.fs.exists(self.source.given)):
+        if not (self.use_glob_matching or self.source.fs.exists(self.source.given) or self.source.fs.isdir(self.source.given)):
             error(f'unable to open S3 path: {self.source.given}')
 
         for col in (
