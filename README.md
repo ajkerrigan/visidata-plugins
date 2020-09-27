@@ -159,7 +159,7 @@ This plugin adds a pair of column-level convenience functions (`from_entries` an
 
 ```python
 Sheet.addCommand(
-    "gz(",
+    "gz{",
     "expand-tags",
     "expand_cols_deep(sheet, [sheet.colsByName['Tags'].from_entries()], cursorRow)"
 )
