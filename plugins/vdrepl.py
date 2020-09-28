@@ -53,4 +53,4 @@ def openRepl(self):
             sys.stdin = orig_stdin
             sys.stdout = orig_stdout
 
-Sheet.addCommand("gz^X", "open-repl", "vd.openRepl()")
+Sheet.addCommand("`", "open-repl", "vd.openRepl()")
