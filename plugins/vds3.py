@@ -6,6 +6,7 @@ is more limited than local paths, but supports:
 * Opening supported filetypes, including compressed files
 '''
 
+from s3fs.core import S3FileSystem
 from visidata import (
     ENTER,
     Column,
@@ -19,7 +20,7 @@ from visidata import (
     open_txt,
     option,
     options,
-    status,
+    vd,
     warning,
 )
 
@@ -45,11 +46,25 @@ class S3Path(Path):
     A Path-like object representing an S3 file (object) or directory (prefix).
     '''
 
-    fs = None
+    _fs = None
 
-    def __init__(self, path):
+    def __init__(self, path, version_id=None):
         super().__init__(path)
         self.given = path
+        self.version_id = self.fs.version_aware and version_id or None
+
+    @property
+    def fs(self):
+        if S3Path._fs is None:
+            S3Path._fs = S3FileSystem(
+                client_kwargs={'endpoint_url': options.vds3_endpoint or None},
+                version_aware=options.vds3_version_aware,
+            )
+        return S3Path._fs
+
+    @fs.setter
+    def fs(self, val):
+        S3Path._fs = val
 
     def open(self, *args, **kwargs):
         '''
@@ -59,7 +74,7 @@ class S3Path(Path):
         # Default to text mode unless we have a compressed file
         mode = 'rb' if self.compression else 'r'
 
-        fp = self.fs.open(self.given, mode=mode)
+        fp = self.fs.open(self.given, mode=mode, version_id=self.version_id)
 
         if self.compression == 'gz':
             import gzip
@@ -78,25 +93,6 @@ class S3Path(Path):
 
         return fp
 
-    def glob(self):
-        '''
-        Perform glob-matching against this path.
-        '''
-        return self.fs.glob(str(self.given))
-
-    def exists(self):
-        '''
-        Return true if this S3 path is an existing directory (prefix)
-        or file (object).
-        '''
-        return self.fs.exists(str(self.given))
-
-    def is_file(self):
-        '''
-        Does this path represent a file?
-        '''
-        return self.fs.isfile(str(self.given))
-
 
 class S3DirSheet(Sheet):
     '''
@@ -105,10 +101,15 @@ class S3DirSheet(Sheet):
     '''
 
     def __init__(self, name, source):
+        import re
+
         super().__init__(name=name, source=source)
         self.rowtype = 'files'
         self.nKeys = 1
-        self.use_glob_matching = options.vds3_glob
+        self.use_glob_matching = self.options.vds3_glob and re.search(
+            r'[*?\[\]]', self.source.given
+        )
+        self.fs = source.fs
 
     def object_display_name(self, _, row):
         '''
@@ -128,15 +129,16 @@ class S3DirSheet(Sheet):
         '''
         Delegate to the underlying filesystem to fetch S3 entries.
         '''
-        row_data = (
-            (
-                self.source.fs.stat(entry, refresh=True)
-                for entry in self.source.fs.glob(str(self.source))
-            )
-            if self.use_glob_matching
-            else self.source.fs.ls(str(self.source), detail=True, refresh=True)
-        )
-        yield from row_data
+        list_func = self.fs.glob if self.use_glob_matching else self.fs.ls
+
+        for key in list_func(str(self.source)):
+            if self.options.vds3_version_aware and self.fs.isfile(key):
+                yield from (
+                    {**version_info, 'Key': key}
+                    for version_info in self.fs.object_version_info(key)
+                )
+            else:
+                yield self.fs.stat(key)
 
     @asyncthread
     def reload(self):
@@ -147,34 +149,36 @@ class S3DirSheet(Sheet):
         import re
 
         self.columns = []
-        self.use_glob_matching = self.options.vds3_glob and re.search(
-            r'[*?\[\]]', self.source.given
-        )
 
-        if not (self.use_glob_matching or self.source.fs.exists(self.source.given) or self.source.fs.isdir(self.source.given)):
+        if not (
+            self.use_glob_matching
+            or self.fs.exists(self.source.given)
+            or self.fs.isdir(self.source.given)
+        ):
             error(f'unable to open S3 path: {self.source.given}')
 
         for col in (
             Column('name', getter=self.object_display_name),
             Column('type', getter=lambda _, row: row.get('type')),
             Column('size', type=int, getter=lambda _, row: row.get('Size')),
-            Column(
-                'modtime', type=date, getter=lambda _, row: row.get('LastModified')
-            ),
+            Column('modtime', type=date, getter=lambda _, row: row.get('LastModified')),
         ):
             self.addColumn(col)
 
+        if self.options.vds3_version_aware:
+            self.addColumn(
+                Column('latest', type=bool, getter=lambda _, row: row.get('IsLatest'))
+            )
+            self.addColumn(
+                Column(
+                    'version_id',
+                    type=str,
+                    getter=lambda _, row: row.get('VersionId'),
+                    width=0,
+                )
+            )
+
         super().reload()
-
-
-S3DirSheet.addCommand(
-    ENTER, 'open-row', 'vd.push(openSource("s3://{}".format(cursorRow["Key"])))'
-)
-S3DirSheet.addCommand(
-    'g' + ENTER,
-    'open-rows',
-    'for r in selectedRows: vd.push(openSource("s3://{}".format(r["Key"])))',
-)
 
 
 def openurl_s3(p, filetype):
@@ -191,20 +195,20 @@ def openurl_s3(p, filetype):
     endpoint = options.vds3_endpoint or None
     version_aware = options.vds3_version_aware
 
+    if not isinstance(p, S3Path):
+        p = S3Path(str(p.given))
+
     # We can reuse an existing S3FileSystem as long as no relevant options
     # have changed since it was created.
     if (
-        not S3Path.fs
-        or S3Path.fs.version_aware != version_aware
-        or S3Path.fs.client_kwargs.get('endpoint_url', '') != endpoint
+        p.fs.version_aware != version_aware
+        or p.fs.client_kwargs.get('endpoint_url', '') != endpoint
     ):
-        S3Path.fs = S3FileSystem(
+        p.fs = S3FileSystem(
             client_kwargs={'endpoint_url': endpoint}, version_aware=version_aware
         )
 
-    p = S3Path(p.given)
-
-    if not p.is_file():
+    if not p.fs.isfile(str(p.given)):
         return S3DirSheet(p.name, source=p)
 
     if not filetype:
@@ -217,8 +221,21 @@ def openurl_s3(p, filetype):
         openfunc = open_txt
 
     vs = openfunc(p)
-    status(f'opening {p.given} as {filetype}')
+    vd.status(
+        f'opening {p.given} as {filetype} (version id: {p.version_id or "latest"})'
+    )
     return vs
 
 
 addGlobals(globals())
+
+S3DirSheet.addCommand(
+    ENTER,
+    'open-row',
+    'vd.push(openSource(S3Path("s3://{}".format(cursorRow["Key"]), version_id=cursorRow.get("VersionId"))))',
+)
+S3DirSheet.addCommand(
+    'g' + ENTER,
+    'open-rows',
+    'for r in selectedRows: vd.push(openSource("s3://{}".format(r["Key"]), version_id=cursorRow.get("VersionId")))',
+)
