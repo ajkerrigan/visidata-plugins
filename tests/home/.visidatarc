@@ -1,3 +1,4 @@
 import plugins.vds3
+from visidata import vd
 
-options.vds3_endpoint = 'http://localhost:3000'
+vd.options.vds3_endpoint = 'http://localhost:3000'
