@@ -4,9 +4,9 @@ is more limited than local paths, but supports:
 
 * Navigating among directories (S3 prefixes)
 * Opening supported filetypes, including compressed files
+* Versioned buckets
 '''
 
-from s3fs.core import S3FileSystem
 from visidata import (
     ENTER,
     Column,
@@ -18,25 +18,22 @@ from visidata import (
     error,
     getGlobals,
     open_txt,
-    option,
-    options,
     vd,
-    warning,
 )
 
 __version__ = '0.4'
 
-option(
+vd.option(
     'vds3_endpoint',
     '',
     'alternate S3 endpoint, used for local testing or alternative S3-compatible services',
     replay=True,
 )
-option('vds3_glob', True, 'enable glob-matching for S3 paths', replay=True)
-option(
+vd.option('vds3_glob', True, 'enable glob-matching for S3 paths', replay=True)
+vd.option(
     'vds3_version_aware',
     False,
-    'work with all object versions, rather than only the latest',
+    'show all object versions in a versioned bucket',
     replay=True,
 )
 
@@ -48,23 +45,27 @@ class S3Path(Path):
 
     _fs = None
 
-    def __init__(self, path, version_id=None):
+    def __init__(self, path, version_aware=None, version_id=None):
         super().__init__(path)
         self.given = path
-        self.version_id = self.fs.version_aware and version_id or None
+        self.version_aware = version_aware or vd.options.vds3_version_aware
+        self.version_id = self.version_aware and version_id or None
 
     @property
     def fs(self):
-        if S3Path._fs is None:
-            S3Path._fs = S3FileSystem(
-                client_kwargs={'endpoint_url': options.vds3_endpoint or None},
-                version_aware=options.vds3_version_aware,
+        from s3fs.core import S3FileSystem
+
+        if self._fs is None:
+            self._fs = S3FileSystem(
+                client_kwargs={'endpoint_url': vd.options.vds3_endpoint or None},
+                version_aware=self.version_aware,
             )
-        return S3Path._fs
+
+        return self._fs
 
     @fs.setter
     def fs(self, val):
-        S3Path._fs = val
+        self._fs = val
 
     def open(self, *args, **kwargs):
         '''
@@ -100,14 +101,17 @@ class S3DirSheet(Sheet):
     Allow single or multiple entries to be opened in separate sheets.
     '''
 
-    def __init__(self, name, source):
+    def __init__(self, name, source, version_aware=None):
         import re
 
         super().__init__(name=name, source=source)
         self.rowtype = 'files'
         self.nKeys = 1
-        self.use_glob_matching = self.options.vds3_glob and re.search(
+        self.use_glob_matching = vd.options.vds3_glob and re.search(
             r'[*?\[\]]', self.source.given
+        )
+        self.version_aware = (
+            vd.options.vds3_version_aware if version_aware is None else version_aware
         )
         self.fs = source.fs
 
@@ -132,9 +136,10 @@ class S3DirSheet(Sheet):
         list_func = self.fs.glob if self.use_glob_matching else self.fs.ls
 
         for key in list_func(str(self.source)):
-            if self.options.vds3_version_aware and self.fs.isfile(key):
+            vd.status(f'loading: {key}')
+            if self.version_aware and self.fs.isfile(key):
                 yield from (
-                    {**version_info, 'Key': key}
+                    {**version_info, 'Key': key, 'type': 'file'}
                     for version_info in self.fs.object_version_info(key)
                 )
             else:
@@ -143,11 +148,8 @@ class S3DirSheet(Sheet):
     @asyncthread
     def reload(self):
         '''
-        Refresh the current S3 directory (prefix) listing. Force a refresh from
-        the S3 filesystem to avoid using cached responses and missing recent changes.
+        Reload the current S3 directory (prefix) listing.
         '''
-        import re
-
         self.columns = []
 
         if not (
@@ -165,7 +167,7 @@ class S3DirSheet(Sheet):
         ):
             self.addColumn(col)
 
-        if self.options.vds3_version_aware:
+        if self.version_aware:
             self.addColumn(
                 Column('latest', type=bool, getter=lambda _, row: row.get('IsLatest'))
             )
@@ -180,43 +182,63 @@ class S3DirSheet(Sheet):
 
         super().reload()
 
+    def refresh(self):
+        '''
+        Clear the s3fs cache for this path and its children, then reload.
+        '''
+        self.fs.invalidate_cache(str(self.source))
+        self.reload()
 
-def openurl_s3(p, filetype):
+    def refresh_all(self):
+        '''
+        Clear the entire s3fs cache, then reload.
+        '''
+        self.fs.invalidate_cache()
+        self.reload()
+
+    def toggle_versioning(self):
+        '''
+        Enable or disable support for S3 versioning.
+        '''
+        self.version_aware = not self.version_aware
+        self.fs.version_aware = self.version_aware
+        vd.status(f's3 versioning {"enabled" if self.version_aware else "disabled"}')
+        self.reload()
+
+
+def openurl_s3(p, filetype, version_aware=None, version_id=None):
     '''
     Open a sheet for an S3 path. S3 directories (prefixes) require special handling,
     but files (objects) can use standard VisiData "open" functions.
     '''
-    from s3fs import S3FileSystem
 
     # Non-obvious behavior here: For the default case, we don't want to send
     # a custom endpoint to s3fs. However, using None as a default trips up
     # VisiData's type detection for the endpoint option. So we use an empty
     # string as the default instead, and convert back to None here.
-    endpoint = options.vds3_endpoint or None
-    version_aware = options.vds3_version_aware
+    endpoint = vd.options.vds3_endpoint or None
 
     if not isinstance(p, S3Path):
-        p = S3Path(str(p.given))
-
-    # We can reuse an existing S3FileSystem as long as no relevant options
-    # have changed since it was created.
-    if (
-        p.fs.version_aware != version_aware
-        or p.fs.client_kwargs.get('endpoint_url', '') != endpoint
-    ):
-        p.fs = S3FileSystem(
-            client_kwargs={'endpoint_url': endpoint}, version_aware=version_aware
+        p = S3Path(
+            str(p.given),
+            version_aware=version_aware or vd.options.vds3_version_aware,
+            version_id=version_id,
         )
 
+    p.fs.version_aware = p.version_aware
+    if p.fs.client_kwargs.get('endpoint_url', '') != endpoint:
+        p.fs.client_kwargs = {'endpoint_url': endpoint}
+        p.fs.connect()
+
     if not p.fs.isfile(str(p.given)):
-        return S3DirSheet(p.name, source=p)
+        return S3DirSheet(p.name, source=p, version_aware=p.version_aware)
 
     if not filetype:
         filetype = p.ext or 'txt'
 
     openfunc = getGlobals().get('open_' + filetype.lower())
     if not openfunc:
-        warning(f'no loader found for {filetype} files, falling back to txt')
+        vd.warning(f'no loader found for {filetype} files, falling back to txt')
         filetype = 'txt'
         openfunc = open_txt
 
@@ -227,15 +249,35 @@ def openurl_s3(p, filetype):
     return vs
 
 
-addGlobals(globals())
-
 S3DirSheet.addCommand(
     ENTER,
     'open-row',
-    'vd.push(openSource(S3Path("s3://{}".format(cursorRow["Key"]), version_id=cursorRow.get("VersionId"))))',
+    'vd.push(openSource(S3Path("s3://{}".format(cursorRow["Key"]), version_aware=sheet.version_aware, version_id=cursorRow.get("VersionId"))))',
+    'open the current S3 entry',
 )
 S3DirSheet.addCommand(
     'g' + ENTER,
     'open-rows',
-    'for r in selectedRows: vd.push(openSource("s3://{}".format(r["Key"]), version_id=cursorRow.get("VersionId")))',
+    'for r in selectedRows: vd.push(openSource("s3://{}".format(r["Key"]), version_aware=sheet.version_aware, version_id=cursorRow.get("VersionId")))',
+    'open all selected S3 entries',
 )
+S3DirSheet.addCommand(
+    'z^R',
+    'refresh-sheet',
+    'sheet.refresh()',
+    'clear the s3fs cache for this path, then reload',
+)
+S3DirSheet.addCommand(
+    'gz^R',
+    'refresh-sheet-all',
+    'sheet.refresh()',
+    'clear the entire s3fs cache, then reload',
+)
+S3DirSheet.addCommand(
+    '^V',
+    'toggle-versioning',
+    'sheet.toggle_versioning()',
+    'enable/disable support for S3 versioning',
+)
+
+addGlobals(globals())
