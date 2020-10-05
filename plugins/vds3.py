@@ -136,7 +136,6 @@ class S3DirSheet(Sheet):
         list_func = self.fs.glob if self.use_glob_matching else self.fs.ls
 
         for key in list_func(str(self.source)):
-            vd.status(f'loading: {key}')
             if self.version_aware and self.fs.isfile(key):
                 yield from (
                     {**version_info, 'Key': key, 'type': 'file'}
@@ -182,18 +181,12 @@ class S3DirSheet(Sheet):
 
         super().reload()
 
-    def refresh(self):
+    def refresh(self, path=None):
         '''
-        Clear the s3fs cache for this path and its children, then reload.
+        Clear the s3fs cache for the given path and reload. By default, clear
+        the entire cache.
         '''
-        self.fs.invalidate_cache(str(self.source))
-        self.reload()
-
-    def refresh_all(self):
-        '''
-        Clear the entire s3fs cache, then reload.
-        '''
-        self.fs.invalidate_cache()
+        self.fs.invalidate_cache(path)
         self.reload()
 
     def toggle_versioning(self):
@@ -263,7 +256,7 @@ S3DirSheet.addCommand(
 S3DirSheet.addCommand(
     'z^R',
     'refresh-sheet',
-    'sheet.refresh()',
+    'sheet.refresh(str(sheet.source))',
     'clear the s3fs cache for this path, then reload',
 )
 S3DirSheet.addCommand(
