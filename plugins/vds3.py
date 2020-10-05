@@ -14,9 +14,11 @@ from visidata import (
     Sheet,
     addGlobals,
     asyncthread,
+    createJoinedSheet,
     date,
     error,
     getGlobals,
+    jointypes,
     open_txt,
     vd,
 )
@@ -185,16 +187,29 @@ class S3DirSheet(Sheet):
         '''
         Open new sheets for the target rows.
         '''
-        for row in rows:
-            vd.push(
-                vd.openSource(
-                    S3Path(
-                        "s3://{}".format(row["Key"]),
-                        version_aware=self.version_aware,
-                        version_id=row.get("VersionId"),
-                    )
+        return [
+            vd.openSource(
+                S3Path(
+                    "s3://{}".format(row["Key"]),
+                    version_aware=self.version_aware,
+                    version_id=row.get("VersionId"),
                 )
             )
+            for row in rows
+        ]
+
+    def join_rows(self, rows):
+        '''
+        Open new sheets for the target rows and combine their contents.
+        Use a chooser to prompt for the join method.
+        '''
+        sheets = self.open_rows(rows)
+        for sheet in sheets:
+            sheet.reload()
+        vd.push(createJoinedSheet(
+            sheets,
+            jointype=vd.chooseOne(jointypes)
+        ))
 
     def refresh(self, path=None):
         '''
@@ -259,13 +274,13 @@ def openurl_s3(p, filetype):
 S3DirSheet.addCommand(
     ENTER,
     'open-row',
-    'sheet.open_rows([cursorRow])',
+    'vd.push(sheet.open_rows([cursorRow]).pop())',
     'open the current S3 entry',
 )
 S3DirSheet.addCommand(
     'g' + ENTER,
     'open-rows',
-    'sheet.open_rows(selectedRows)',
+    'for vs in sheet.open_rows(selectedRows): vd.push(vs)',
     'open all selected S3 entries',
 )
 S3DirSheet.addCommand(
@@ -285,6 +300,12 @@ S3DirSheet.addCommand(
     'toggle-versioning',
     'sheet.toggle_versioning()',
     'enable/disable support for S3 versioning',
+)
+S3DirSheet.addCommand(
+    '&',
+    'join-rows',
+    'sheet.join_rows(selectedRows)',
+    'open and join sheets for selected S3 entries'
 )
 
 addGlobals(globals())
