@@ -218,12 +218,11 @@ def openurl_s3(p, filetype, version_aware=None, version_id=None):
     # string as the default instead, and convert back to None here.
     endpoint = vd.options.vds3_endpoint or None
 
-    if not isinstance(p, S3Path):
-        p = S3Path(
-            str(p.given),
-            version_aware=version_aware or vd.options.vds3_version_aware,
-            version_id=version_id,
-        )
+    p = S3Path(
+        str(p.given),
+        version_aware=version_aware or vd.options.vds3_version_aware,
+        version_id=version_id,
+    )
 
     p.fs.version_aware = p.version_aware
     if p.fs.client_kwargs.get('endpoint_url', '') != endpoint:
