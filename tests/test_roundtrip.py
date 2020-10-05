@@ -1,13 +1,13 @@
 import gzip
 import json
 import shutil
-import subprocess
+import multiprocessing
 
 import boto3
 import botocore
+import moto.server
 import pytest
-
-import plugins
+from visidata import vd, AttrDict, Path
 
 JSON_SAMPLE = 'tests/sample.json'
 BUCKET = 'visidata-test'
@@ -22,9 +22,13 @@ def moto_s3():
     S3 endpoint for the duration of the test session. We can direct
     both boto3 and the vds3 plugin to use the same local endpoint.
     '''
-    with subprocess.Popen(['moto_server', 's3', '-p3000']) as proc:
-        yield
-        proc.kill()
+    multiprocessing.set_start_method('spawn')
+    proc = multiprocessing.Process(
+        target=moto.server.main, kwargs={'argv': ('s3', '-p', '3000')}
+    )
+    proc.start()
+    yield
+    proc.terminate()
 
 
 @pytest.fixture(scope='session')
@@ -37,13 +41,27 @@ def s3_resource():
     )
 
 
+def visidata_roundtrip(inpath, outpath):
+    '''
+    Load and save a file with VisiData.
+
+    inpath: str
+    outpath: visidata.Path
+    '''
+    vd.loadConfigAndPlugins(AttrDict({}))
+    sheet = vd.openSource(inpath)
+    sheet.reload()
+    vd.sync()
+    vd.save_json(outpath, sheet)
+
+
 def test_local_roundtrip(tmp_path):
     '''
     Be sure that a round trip of our sample JSON file works
     as expected before getting S3 into the mix.
     '''
     out = tmp_path / 'sample.json'
-    subprocess.run(['vd', '-b', JSON_SAMPLE, '-o', out])
+    visidata_roundtrip(JSON_SAMPLE, Path(out))
     with open(JSON_SAMPLE, 'r') as f1, open(out, 'r') as f2:
         assert json.load(f1) == json.load(f2)
 
@@ -58,7 +76,7 @@ def test_s3_roundtrip(tmp_path, s3_resource):
     obj = s3_resource.Object(BUCKET, KEY)
     obj.upload_file(JSON_SAMPLE)
     obj.wait_until_exists()
-    subprocess.run(['vd', '-b', f's3://{BUCKET}/{KEY}', '-o', out])
+    visidata_roundtrip(f's3://{BUCKET}/{KEY}', Path(out))
     with open(JSON_SAMPLE, 'r') as f1, open(out, 'r') as f2:
         assert json.load(f1) == json.load(f2)
 
@@ -77,6 +95,6 @@ def test_s3_gzip_roundtrip(tmp_path, s3_resource):
         shutil.copyfileobj(uncompressed, compressed)
     obj.upload_file(str(gzpath))
     obj.wait_until_exists()
-    subprocess.run(['vd', '-b', f's3://{BUCKET}/{KEY}.gz', '-o', out])
+    visidata_roundtrip(f's3://{BUCKET}/{KEY}.gz', Path(out))
     with open(JSON_SAMPLE, 'r') as f1, open(out, 'r') as f2:
         assert json.load(f1) == json.load(f2)
