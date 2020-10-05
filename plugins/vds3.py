@@ -181,6 +181,21 @@ class S3DirSheet(Sheet):
 
         super().reload()
 
+    def open_rows(self, rows):
+        '''
+        Open new sheets for the target rows.
+        '''
+        for row in rows:
+            vd.push(
+                vd.openSource(
+                    S3Path(
+                        "s3://{}".format(row["Key"]),
+                        version_aware=self.version_aware,
+                        version_id=row.get("VersionId"),
+                    )
+                )
+            )
+
     def refresh(self, path=None):
         '''
         Clear the s3fs cache for the given path and reload. By default, clear
@@ -199,7 +214,7 @@ class S3DirSheet(Sheet):
         self.reload()
 
 
-def openurl_s3(p, filetype, version_aware=None, version_id=None):
+def openurl_s3(p, filetype):
     '''
     Open a sheet for an S3 path. S3 directories (prefixes) require special handling,
     but files (objects) can use standard VisiData "open" functions.
@@ -213,8 +228,8 @@ def openurl_s3(p, filetype, version_aware=None, version_id=None):
 
     p = S3Path(
         str(p.given),
-        version_aware=version_aware or vd.options.vds3_version_aware,
-        version_id=version_id,
+        version_aware=getattr(p, 'version_aware', vd.options.vds3_version_aware),
+        version_id=getattr(p, 'version_id', None),
     )
 
     p.fs.version_aware = p.version_aware
@@ -244,13 +259,13 @@ def openurl_s3(p, filetype, version_aware=None, version_id=None):
 S3DirSheet.addCommand(
     ENTER,
     'open-row',
-    'vd.push(openSource(S3Path("s3://{}".format(cursorRow["Key"]), version_aware=sheet.version_aware, version_id=cursorRow.get("VersionId"))))',
+    'sheet.open_rows([cursorRow])',
     'open the current S3 entry',
 )
 S3DirSheet.addCommand(
     'g' + ENTER,
     'open-rows',
-    'for r in selectedRows: vd.push(openSource("s3://{}".format(r["Key"]), version_aware=sheet.version_aware, version_id=cursorRow.get("VersionId")))',
+    'sheet.open_rows(selectedRows)',
     'open all selected S3 entries',
 )
 S3DirSheet.addCommand(
