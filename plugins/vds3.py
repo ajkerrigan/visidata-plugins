@@ -7,6 +7,8 @@ is more limited than local paths, but supports:
 * Versioned buckets
 '''
 
+from collections import defaultdict
+
 from visidata import (
     ENTER,
     Column,
@@ -135,13 +137,27 @@ class S3DirSheet(Sheet):
         '''
         Delegate to the underlying filesystem to fetch S3 entries.
         '''
+        version_info = defaultdict(list)
+        if self.version_aware:
+            import re
+
+            # `object_version_info` pulls version info for all objects below
+            # a given S3 prefix. The prefix can't include glob wildcard
+            # characters.
+            version_root = re.match(r'[^*?\[\]]+', str(self.source)).group()
+
+            for v in self.fs.object_version_info(version_root):
+                version_info[v['Key']].append(v)
+
         list_func = self.fs.glob if self.use_glob_matching else self.fs.ls
 
         for key in list_func(str(self.source)):
             if self.version_aware and self.fs.isfile(key):
                 yield from (
-                    {**version_info, 'Key': key, 'type': 'file'}
-                    for version_info in self.fs.object_version_info(key)
+                    {**obj_version, 'Key': key, 'type': 'file'}
+                    for obj_version in version_info[
+                        key.lstrip('s3://').partition('/')[2]
+                    ]
                 )
             else:
                 yield self.fs.stat(key)
@@ -206,10 +222,7 @@ class S3DirSheet(Sheet):
         sheets = self.open_rows(rows)
         for sheet in sheets:
             sheet.reload()
-        vd.push(createJoinedSheet(
-            sheets,
-            jointype=vd.chooseOne(jointypes)
-        ))
+        vd.push(createJoinedSheet(sheets, jointype=vd.chooseOne(jointypes)))
 
     def refresh(self, path=None):
         '''
@@ -305,7 +318,7 @@ S3DirSheet.addCommand(
     '&',
     'join-rows',
     'sheet.join_rows(selectedRows)',
-    'open and join sheets for selected S3 entries'
+    'open and join sheets for selected S3 entries',
 )
 
 addGlobals(globals())
