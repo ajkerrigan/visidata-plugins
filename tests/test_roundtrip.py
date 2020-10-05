@@ -2,12 +2,14 @@ import gzip
 import json
 import shutil
 import subprocess
+import multiprocessing
 
 import boto3
 import botocore
+import moto.server
 import pytest
 
-import plugins
+import plugins.vds3
 
 JSON_SAMPLE = 'tests/sample.json'
 BUCKET = 'visidata-test'
@@ -22,9 +24,13 @@ def moto_s3():
     S3 endpoint for the duration of the test session. We can direct
     both boto3 and the vds3 plugin to use the same local endpoint.
     '''
-    with subprocess.Popen(['moto_server', 's3', '-p3000']) as proc:
-        yield
-        proc.kill()
+    multiprocessing.set_start_method('spawn')
+    proc = multiprocessing.Process(
+        target=moto.server.main, kwargs={'argv': ('s3', '-p', '3000')}
+    )
+    proc.start()
+    yield
+    proc.terminate()
 
 
 @pytest.fixture(scope='session')
