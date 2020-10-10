@@ -142,27 +142,14 @@ class S3DirSheet(Sheet):
         '''
         Delegate to the underlying filesystem to fetch S3 entries.
         '''
-        version_info = defaultdict(list)
-        if self.version_aware:
-            import re
-
-            # `object_version_info` pulls version info for all objects below
-            # a given S3 prefix. The prefix can't include glob wildcard
-            # characters.
-            version_root = re.match(r'[^*?\[\]]+', str(self.source)).group()
-
-            for v in self.fs.object_version_info(version_root):
-                version_info[v['Key']].append(v)
-
         list_func = self.fs.glob if self.use_glob_matching else self.fs.ls
 
         for key in list_func(str(self.source)):
             if self.version_aware and self.fs.isfile(key):
                 yield from (
                     {**obj_version, 'Key': key, 'type': 'file'}
-                    for obj_version in version_info[
-                        key.lstrip('s3://').partition('/')[2]
-                    ]
+                    for obj_version in self.fs.object_version_info(key)
+                    if key.partition('/')[2] == obj_version['Key']
                 )
             else:
                 yield self.fs.stat(key)
