@@ -16,6 +16,7 @@ from visidata import (
     Sheet,
     addGlobals,
     asyncthread,
+    cancelThread,
     createJoinedSheet,
     date,
     error,
@@ -195,7 +196,7 @@ class S3DirSheet(Sheet):
         '''
         Open new sheets for the target rows.
         '''
-        return [
+        return (
             vd.openSource(
                 S3Path(
                     "s3://{}".format(row["Key"]),
@@ -204,17 +205,27 @@ class S3DirSheet(Sheet):
                 )
             )
             for row in rows
-        ]
+        )
 
     def join_rows(self, rows):
         '''
         Open new sheets for the target rows and combine their contents.
         Use a chooser to prompt for the join method.
         '''
-        sheets = self.open_rows(rows)
-        for sheet in sheets:
+
+        # Cancel threads before beginning a join, to prevent unpredictable
+        # behavior in the chooser UI.
+        if self.currentThreads:
+            vd.cancelThread(*self.currentThreads)
+
+        join_choice = vd.chooseOne(jointypes)
+        sheets = list(self.open_rows(rows))
+        for sheet in vd.Progress(sheets):
             sheet.reload()
-        vd.push(createJoinedSheet(sheets, jointype=vd.chooseOne(jointypes)))
+
+        # Wait for all sheets to fully load before joining them.
+        vd.sync()
+        vd.push(createJoinedSheet(sheets, jointype=join_choice))
 
     def refresh(self, path=None):
         '''
@@ -231,6 +242,9 @@ class S3DirSheet(Sheet):
         self.version_aware = not self.version_aware
         self.fs.version_aware = self.version_aware
         vd.status(f's3 versioning {"enabled" if self.version_aware else "disabled"}')
+        if self.currentThreads:
+            vd.debug(f'cancelling threads before reloading')
+            vd.cancelThread(*self.currentThreads)
         self.reload()
 
 
@@ -279,7 +293,7 @@ def openurl_s3(p, filetype):
 S3DirSheet.addCommand(
     ENTER,
     'open-row',
-    'vd.push(sheet.open_rows([cursorRow]).pop())',
+    'vd.push(next(sheet.open_rows([cursorRow])))',
     'open the current S3 entry',
 )
 S3DirSheet.addCommand(
