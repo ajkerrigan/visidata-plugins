@@ -81,6 +81,11 @@ class S3Path(Path):
 
         fp = self.fs.open(self.given, mode=mode, version_id=self.version_id)
 
+        # Workaround for https://github.com/ajkerrigan/visidata-plugins/issues/12
+        if hasattr(fp, 'cache') and fp.cache.size != fp.size:
+            vd.debug(f'updating cache size from {fp.cache.size} to {fp.size} to match object size')
+            fp.cache.size = fp.size
+
         if self.compression == 'gz':
             import gzip
 
