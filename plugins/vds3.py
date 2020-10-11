@@ -7,8 +7,6 @@ is more limited than local paths, but supports:
 * Versioned buckets
 '''
 
-from collections import defaultdict
-
 from visidata import (
     ENTER,
     Column,
@@ -19,14 +17,13 @@ from visidata import (
     cancelThread,
     createJoinedSheet,
     date,
-    error,
     getGlobals,
     jointypes,
     open_txt,
     vd,
 )
 
-__version__ = '0.5'
+__version__ = '0.6dev'
 
 vd.option(
     'vds3_endpoint',
@@ -167,7 +164,7 @@ class S3DirSheet(Sheet):
             or self.fs.exists(self.source.given)
             or self.fs.isdir(self.source.given)
         ):
-            error(f'unable to open S3 path: {self.source.given}')
+            vd.fail(f'unable to open S3 path: {self.source.given}')
 
         for col in (
             Column('name', getter=self.object_display_name),
