@@ -1,8 +1,9 @@
 import ipaddress
 import re
 from contextlib import suppress
+from string import ascii_uppercase, digits
 
-from visidata import BaseSheet, asyncthread, input, options, vd
+from visidata import BaseSheet, asyncthread, vd
 
 from faker.providers import BaseProvider
 from faker_cloud import AmazonWebServicesProvider
@@ -50,7 +51,7 @@ class VdCustomProvider(BaseProvider):
 try:
     import plugins.vfake
 
-    options.vfake_extra_providers = [AmazonWebServicesProvider, VdCustomProvider]
+    vd.options.vfake_extra_providers = [AmazonWebServicesProvider, VdCustomProvider]
 except Exception as err:
     vd.warning(f'Error importing vfake dependency for vfake_extensions: {err}')
 
@@ -135,8 +136,8 @@ def autofake(sheet, cols, rows):
 BaseSheet.bindkey("zf", "setcol-fake")
 BaseSheet.addCommand(
     "gzf",
-    "setcol-fake-all",
-    'cursorCol.setValuesFromFaker(input("faketype: ", type="faketype"), rows)',
+    'setcol-fake-all',
+    'cursorCol.setValuesFromFaker(vd.input("faketype: ", type="faketype"), rows)',
 )
 BaseSheet.addCommand('z^F', 'setcol-autofake', f'sheet.autofake([cursorCol], rows)')
 BaseSheet.addCommand('gz^F', 'setcols-autofake', f'sheet.autofake(columns, rows)')

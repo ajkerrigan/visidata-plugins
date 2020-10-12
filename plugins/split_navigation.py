@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from visidata import ALT, ENTER, FreqTableSheet, TableSheet, load_pyobj, vd
+from visidata import ALT, ENTER, FreqTableSheet, PyobjSheet, TableSheet, vd
 
 
 class NoContentPlaceholder:
@@ -54,11 +54,11 @@ def goParentRow(sheet, by):
         return
 
     if not NoContentPlaceholder.emptyRowSheet:
-        NoContentPlaceholder.emptyRowSheet = load_pyobj(
+        NoContentPlaceholder.emptyRowSheet = PyobjSheet(
             'placeholder', NoContentPlaceholder.emptyRowMessage
         )
     if not NoContentPlaceholder.emptyCellSheet:
-        NoContentPlaceholder.emptyCellSheet = load_pyobj(
+        NoContentPlaceholder.emptyCellSheet = PyobjSheet(
             'placeholder', NoContentPlaceholder.emptyCellMessage
         )
 
