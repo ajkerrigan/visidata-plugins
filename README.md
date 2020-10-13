@@ -27,15 +27,13 @@ Use glob-matching to focus your search:
 
 #### Install VisiData
 
-This plugin is designed to work with the plugin framework coming with the [2.x](http://visidata.org/v2.x/) release.
-
-Due to some recent upstream changes, I recommend installing from the `develop` branch:
+Via pip:
 
 ```
-pip3 install git+git://github.com/saulpw/visidata@develop
+pip3 install visidata
 ```
 
-Once we see a stable VisiData 2.x release, the simpler `pip3 install visidata` should be sufficient.
+There is a comprehensive guide to various installation methods [here](https://www.visidata.org/install/). I prefer using [pipx](https://github.com/pipxproject/pipx) for the main install, and `pipx inject` to add plugin dependencies. Choose whichever install method works best for you, as long as you install VisiData 2.0 or higher.
 
 #### Install the Plugin
 
@@ -71,7 +69,7 @@ import plugins
 pip3 install s3fs
 ```
 
-2. Copy `vds3.py` to a `plugins` location inside your VisiData directory (by default, `~/.visidata`):
+2. Copy `vds3.py` to a `plugins` subdirectory inside your VisiData directory (by default, `~/.visidata`):
 
 ```
 mkdir -p ~/.visidata/plugins
@@ -124,6 +122,21 @@ vd 's3://my-bucket/**/*.csv.gz
 ```
 
 Since glob-matching can return results from multiple "directories" (S3 prefixes), the glob results sheet will display full object names rather than imitating a navigable directory hierarchy.
+
+#### Browse previous versions of objects
+
+Open an S3 path:
+
+```
+vd 's3://my-bucket'
+vd 's3://my-bucket/path'
+```
+
+Hit `^V` to toggle support for S3 versioning. When enabled, there will be an additional `Latest?` column along with a `Version ID` column that is hidden by default. Previous versions can be opened with `Enter` or `g+Enter` as usual.
+
+#### Join/combine objects
+
+From an S3 directory listings, select multiple objects and use `&` to join object contents into a single sheet. This uses the native VisiData join functionality under the hood, so the available join types match those described in VisiData's [join documentation](https://www.visidata.org/docs/join/).
 
 ### Configuration
 
