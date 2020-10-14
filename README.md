@@ -146,6 +146,16 @@ This plugin's behavior can be tweaked with the following options:
 
 `vds3_endpoint` (Default: `None`): Specify a custom S3 endpoint. This can be useful for local testing, or for pairing this plugin with S3-compatible endpoints such as MinIO, Backblaze B2, etc.
 
+**Note:** This sample `~/.visidatarc` snippet defines local S3 endpoints to be used when specific AWS profiles are active. It assumes that if the `moto` or `localstack` AWS CLI profiles are active, you have a local [moto server](https://github.com/spulec/moto#stand-alone-server-mode) or [localstack](https://github.com/localstack/localstack) S3 service running on a specific port. For any other AWS profile it falls back to the AWS default endpoint. A block like this can help you naturally switch between endpoints based on context, rather than requiring command line switches.
+
+```python
+profile_endpoint_map = {
+    'localstack': 'http://localhost:4572',
+    'moto': 'http://localhost:3000',
+}
+options.vds3_endpoint = profile_endpoint_map.get(os.environ.get('AWS_PROFILE'))
+```
+
 Options can be configured directly in a `~/.visidatarc` file:
 
 ```python
