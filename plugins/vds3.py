@@ -26,6 +26,20 @@ from visidata import (
 __version__ = '0.6'
 
 vd.option(
+    'vds3_access_key_id',
+    '',
+    'AWS access key id',
+    replay=False,
+)
+
+vd.option(
+    'vds3_secret_access_key',
+    '',
+    'AWS secret access key',
+    replay=False,
+)
+
+vd.option(
     'vds3_endpoint',
     '',
     'alternate S3 endpoint, used for local testing or alternative S3-compatible services',
@@ -60,7 +74,10 @@ class S3Path(Path):
         if self._fs is None:
             self._fs = S3FileSystem(
                 client_kwargs={'endpoint_url': vd.options.vds3_endpoint or None},
+                key=vd.options.vds3_access_key_id,
+                secret=vd.options.vds3_secret_access_key,
                 version_aware=self.version_aware,
+                anon=False,
             )
 
         return self._fs
@@ -188,6 +205,11 @@ class S3DirSheet(Sheet):
             )
 
         super().reload()
+
+    @asyncthread
+    def download_file(self, row, savepath):
+        f=list(self.open_rows([row]))[0].source
+        f.fs.download(f.given, str(savepath))
 
     def open_rows(self, rows):
         '''
@@ -321,6 +343,12 @@ S3DirSheet.addCommand(
     '&',
     'join-rows',
     'sheet.join_rows(selectedRows)',
+    'open and join sheets for selected S3 entries',
+)
+S3DirSheet.addCommand(
+    'x',
+    'download-file',
+    'p=Path(cursorRow["name"]); download_file(cursorRow, inputPath("download to: ", value=p.name+"."+p.ext))',
     'open and join sheets for selected S3 entries',
 )
 
