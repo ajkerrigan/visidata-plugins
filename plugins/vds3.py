@@ -23,7 +23,7 @@ from visidata import (
     vd,
 )
 
-__version__ = '0.6dev'
+__version__ = '0.6'
 
 vd.option(
     'vds3_endpoint',
