@@ -224,7 +224,7 @@ class S3DirSheet(Sheet):
         vd.sync()
         vd.push(createJoinedSheet(sheets, jointype=join_choice))
 
-    def refresh(self, path=None):
+    def refresh_path(self, path=None):
         '''
         Clear the s3fs cache for the given path and reload. By default, clear
         the entire cache.
@@ -302,13 +302,13 @@ S3DirSheet.addCommand(
 S3DirSheet.addCommand(
     'z^R',
     'refresh-sheet',
-    'sheet.refresh(str(sheet.source))',
+    'sheet.refresh_path(str(sheet.source))',
     'clear the s3fs cache for this path, then reload',
 )
 S3DirSheet.addCommand(
     'gz^R',
     'refresh-sheet-all',
-    'sheet.refresh()',
+    'sheet.refresh_path()',
     'clear the entire s3fs cache, then reload',
 )
 S3DirSheet.addCommand(
