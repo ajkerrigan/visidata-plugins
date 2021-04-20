@@ -39,7 +39,8 @@ def from_entries(col):
         vd.fail(f'Columns {col.name} is not a list of Key/Value pairs')
 
     new_idx = sheet.columns.index(col) + 1
-    new_col = sheet.addColumn(SettableColumn(col.name), index=new_idx)
+    new_col = SettableColumn(col.name)
+    sheet.addColumn(new_col, index=new_idx)
     isNull = _isNullFunc()
     for row in rows:
         val = col.getValue(row)
@@ -75,7 +76,8 @@ def to_entries(col):
     rows = sheet.rows
 
     new_idx = sheet.columns.index(col) + 1
-    new_col = sheet.addColumn(SettableColumn(col.name), index=new_idx)
+    new_col = SettableColumn(col.name)
+    sheet.addColumn(new_col, index=new_idx)
     isNull = _isNullFunc()
     for r in rows:
         val = col.getValue(r)
