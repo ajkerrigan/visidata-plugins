@@ -1,6 +1,6 @@
 from functools import partial
 import jmespath
-from visidata import BaseSheet, ExprColumn
+from visidata import BaseSheet, ExprColumn, vd
 
 
 @BaseSheet.api
@@ -41,3 +41,5 @@ BaseSheet.addCommand(
     'sheet.select_by_jmespath(unselect=True)',
     'unselect rows matching a jmespath expression in any visible column'
 )
+
+vd.addGlobals(globals())
