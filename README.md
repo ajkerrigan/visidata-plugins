@@ -10,6 +10,7 @@ Custom plugins for https://github.com/saulpw/visidata/
 * [vpager](#vpager-open-long-cell-values-in-the-system-pager): Open long cell values in the system pager
 * [debugging_helpers](#debugging_helpers-integrate-visidata-with-debugging-packages): Integrate VisiData with debugging packages
 * [split_navigation](#split_navigation-navigation-keybindings-for-masterdetail-split-views): Navigation keybindings for master/detail split views
+* [vd_jmespath](#vd_jmespath-evaluate-jmespath-expressions): Use JMESPath expressions to add columns or toggle row selection
 
 ## vds3: Open Amazon S3 paths and objects
 
@@ -110,7 +111,7 @@ vd 's3://my-bucket/path'
 
 When browsing a bucket, VisiData will behave like a file explorer:
 
-`Enter`: Opens the current file or directory as a new sheet.  
+`Enter`: Opens the current file or directory as a new sheet.
 `g+Enter`: Open all selected files and directories.
 
 `q`'s behavior is unchanged (closes the current sheet), but while browsing a bucket it effectively becomes the "go up one level" command.
@@ -306,6 +307,46 @@ VisiData's [split window](https://www.visidata.org/blog/2020/splitwin/) feature 
 #### Frequency Table "Zoom" Navigation
 
 [![asciicast](https://asciinema.org/a/hS2cSpo7rHI2FN0piscFSlRm5.svg)](https://asciinema.org/a/hS2cSpo7rHI2FN0piscFSlRm5)
+
+## vd_jmespath: Evaluate JMESPath expressions
+
+### Overview
+
+[JMESPath](https://jmespath.org/) is a query language for JSON data. This plugin adds VisiData
+commands to add columns or select rows based on JMESPath expressions.
+
+### Installation
+
+* Option 1: Include the contents of [vd_jmespath.py](plugins/vd_jmespath.py) in your `~/.visidatarc` file.
+* Option 2:
+  * Copy [vd_jmespath.py](plugins/vd_jmespath.py) to your local `~/.visidata/plugins` directory.
+  * Add `import plugins.vd_jmespath` to `~/.visidata/plugins/__init__.py`
+  * Add `import plugins` to `~/.visidatarc` if it is not there already
+
+This plugin adds commands but does _not_ define its own keyboard shortcuts for them, since
+those are a matter of personal preference and the risk of collisions is high. Instead, you
+can define your own shortcuts in `~/.visidatarc`. For reference, mine look like this:
+
+```python
+from visidata import BaseSheet, vd
+
+# Use space as a prefix key rather than to execute a command by name.
+vd.bindkeys[':'] = {'BaseSheet': 'exec-longname'}
+vd.allPrefixes.append(' ')
+
+# Define JMESPath commands by adding a custom prefix to the built-in
+# addcol/select/unselect commands.
+BaseSheet.bindkey(' =', 'addcol-jmespath')
+BaseSheet.bindkey(' |', 'select-jmespath')
+BaseSheet.bindkey(' \\', 'unselect-jmespath')
+```
+
+### Usage
+
+Inside a sheet containing JSON data:
+
+* `addcol-jmespath` adds a new column by evaluating a given expression against each row
+* `select-jmespath` and `unselect-jmespath` toggle row selection based on an expression
 
 ## Contributing
 
