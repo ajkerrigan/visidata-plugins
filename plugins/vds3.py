@@ -26,20 +26,6 @@ from visidata import (
 __version__ = '0.6'
 
 vd.option(
-    'vds3_access_key_id',
-    '',
-    'AWS access key id',
-    replay=False,
-)
-
-vd.option(
-    'vds3_secret_access_key',
-    '',
-    'AWS secret access key',
-    replay=False,
-)
-
-vd.option(
     'vds3_endpoint',
     '',
     'alternate S3 endpoint, used for local testing or alternative S3-compatible services',
@@ -74,10 +60,7 @@ class S3Path(Path):
         if self._fs is None:
             self._fs = S3FileSystem(
                 client_kwargs={'endpoint_url': vd.options.vds3_endpoint or None},
-                key=vd.options.vds3_access_key_id,
-                secret=vd.options.vds3_secret_access_key,
                 version_aware=self.version_aware,
-                anon=False,
             )
 
         return self._fs
@@ -207,9 +190,13 @@ class S3DirSheet(Sheet):
         super().reload()
 
     @asyncthread
-    def download_file(self, row, savepath):
-        f=list(self.open_rows([row]))[0].source
-        f.fs.download(f.given, str(savepath))
+    def download(self, rows, savepath):
+        '''Download files and directories to a local path.
+
+        Recurse through through subdirectories.
+        '''
+        remote_files = [row['Key'] for row in rows]
+        self.fs.download(remote_files, str(savepath), recursive=True)
 
     def open_rows(self, rows):
         '''
@@ -346,10 +333,32 @@ S3DirSheet.addCommand(
     'open and join sheets for selected S3 entries',
 )
 S3DirSheet.addCommand(
+    'gx',
+    'download-rows',
+    (
+        'savepath = inputPath("download selected rows to: ", value=".");'
+        'sheet.download(selectedRows, savepath)'
+    ),
+    'download selected files and directories',
+)
+S3DirSheet.addCommand(
     'x',
-    'download-file',
-    'p=Path(cursorRow["name"]); download_file(cursorRow, inputPath("download to: ", value=p.name+"."+p.ext))',
-    'open and join sheets for selected S3 entries',
+    'download-row',
+    (
+        # Note about the use of `_path.name` here. Given a `visidata.Path`
+        # object `path`, `path._path` is a `pathlib.Path` object.
+        #
+        # `visidata.Path` objects do some fun parsing to pick out
+        # file types and extensions, handle compression transparently,
+        # etc. That parsing leaves the `name` attribute without a file
+        # extension, and makes it a little tricky to tack back on.
+        #
+        # `pathlib.Path` objects have a `name` with the extension intact.
+        # That makes `path._path.name` a convenient default output path.
+        'savepath = inputPath("download to: ", value=Path(cursorRow["Key"])._path.name);'
+        'sheet.download([cursorRow], savepath)'
+    ),
+    'download the file or directory in the cursor row',
 )
 
 addGlobals(globals())
