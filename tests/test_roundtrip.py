@@ -37,7 +37,6 @@ def moto_s3():
     yield
     proc.terminate()
 
-
 @pytest.fixture(scope='session')
 def s3_setup(moto_s3, tmp_path_factory, path_info):
     resource = boto3.resource(
@@ -71,7 +70,6 @@ def load_vd_sheet(inpath):
     vd.sync()
     return sheet
 
-
 def test_local_roundtrip(tmp_path, path_info):
     '''
     Be sure that a round trip of our sample JSON file works
@@ -83,7 +81,6 @@ def test_local_roundtrip(tmp_path, path_info):
     with open(path_info.local_file, 'r') as f1, open(out, 'r') as f2:
         assert json.load(f1) == json.load(f2)
 
-
 def test_s3_roundtrip(tmp_path, s3_setup, path_info):
     '''
     Upload a sample file to our mock S3 server, then confirm that
@@ -94,7 +91,6 @@ def test_s3_roundtrip(tmp_path, s3_setup, path_info):
     vd.save_json(Path(out), sheet)
     with open(path_info.local_file, 'r') as f1, open(out, 'r') as f2:
         assert json.load(f1) == json.load(f2)
-
 
 def test_s3_gzip_roundtrip(tmp_path, s3_setup, path_info):
     '''
@@ -108,7 +104,14 @@ def test_s3_gzip_roundtrip(tmp_path, s3_setup, path_info):
     with open(path_info.local_file, 'r') as f1, open(out, 'r') as f2:
         assert json.load(f1) == json.load(f2)
 
-# def test_s3_download(tmp_path, s3_resource):
-#     '''Make sure that we can download files and nothing gets
-#     lost in translation.
-#     '''
+def test_s3_download(tmp_path, s3_setup, path_info):
+    '''Make sure that we can download files and nothing gets
+    lost along the way.
+    '''
+    sheet = load_vd_sheet(f's3://{path_info.s3_bucket}')
+    sheet.download(sheet.rows, Path(tmp_path))
+    vd.sync()
+    assert (
+        {path_info.base_filename, path_info.gzip_filename} <=
+        set(f.name for f in Path(tmp_path).glob('**/*'))
+    )
