@@ -2,6 +2,7 @@ import gzip
 import json
 import shutil
 import multiprocessing
+from collections import namedtuple
 
 import boto3
 import botocore
@@ -9,13 +10,19 @@ import moto.server
 import pytest
 from visidata import vd, AttrDict, Path
 
-JSON_SAMPLE = 'tests/sample.json'
-BUCKET = 'visidata-test'
-KEY = 'nested/folders/sample.json'
-BOTO_CONFIG = botocore.config.Config(retries=dict(max_attempts=10))
-
 
 @pytest.fixture(scope='session', autouse=True)
+def path_info():
+    filename = 'sample.json'
+    yield AttrDict({
+        'base_filename': filename,
+        'gzip_filename': f'{filename}.gz',
+        'local_file': f'tests/{filename}',
+        's3_bucket': 'visidata-test',
+        's3_key': f'nested/folders/{filename}',
+    })
+
+@pytest.fixture(scope='session')
 def moto_s3():
     '''
     Because we're treating VisiData as a black box, use a shared mock
@@ -30,71 +37,81 @@ def moto_s3():
     yield
     proc.terminate()
 
-
 @pytest.fixture(scope='session')
-def s3_resource():
-    return boto3.resource(
+def s3_setup(moto_s3, tmp_path_factory, path_info):
+    resource = boto3.resource(
         's3',
         region_name='us-east-1',
-        config=BOTO_CONFIG,
+        config=botocore.config.Config(retries=dict(max_attempts=10)),
         endpoint_url='http://localhost:3000',
     )
+    bucket, key = path_info.s3_bucket, path_info.s3_key
 
+    resource.create_bucket(Bucket=bucket)
+    obj = resource.Object(bucket, key)
+    obj.upload_file(path_info.local_file)
+    obj.wait_until_exists()
 
-def visidata_roundtrip(inpath, outpath):
+    gzpath = tmp_path_factory.mktemp('gzip') / path_info.gzip_filename
+    obj = resource.Object(bucket, f'{key}.gz')
+    with open(path_info.local_file, 'rb') as uncompressed, gzip.open(gzpath, 'wb') as compressed:
+        shutil.copyfileobj(uncompressed, compressed)
+    obj.upload_file(str(gzpath))
+    obj.wait_until_exists()
+
+def load_vd_sheet(inpath):
     '''
-    Load and save a file with VisiData.
-
-    inpath: str
-    outpath: visidata.Path
+    Load a file with VisiData, and return the
+    sheet object.
     '''
     vd.loadConfigAndPlugins(AttrDict({}))
     sheet = vd.openSource(inpath)
     sheet.reload()
     vd.sync()
-    vd.save_json(outpath, sheet)
+    return sheet
 
-
-def test_local_roundtrip(tmp_path):
+def test_local_roundtrip(tmp_path, path_info):
     '''
     Be sure that a round trip of our sample JSON file works
     as expected before getting S3 into the mix.
     '''
     out = tmp_path / 'sample.json'
-    visidata_roundtrip(JSON_SAMPLE, Path(out))
-    with open(JSON_SAMPLE, 'r') as f1, open(out, 'r') as f2:
+    sheet = load_vd_sheet(path_info.local_file)
+    vd.save_json(Path(out), sheet)
+    with open(path_info.local_file, 'r') as f1, open(out, 'r') as f2:
         assert json.load(f1) == json.load(f2)
 
-
-def test_s3_roundtrip(tmp_path, s3_resource):
+def test_s3_roundtrip(tmp_path, s3_setup, path_info):
     '''
     Upload a sample file to our mock S3 server, then confirm that
     a VisiData round trip brings back the same data.
     '''
     out = tmp_path / 'sample.json'
-    s3_resource.create_bucket(Bucket=BUCKET)
-    obj = s3_resource.Object(BUCKET, KEY)
-    obj.upload_file(JSON_SAMPLE)
-    obj.wait_until_exists()
-    visidata_roundtrip(f's3://{BUCKET}/{KEY}', Path(out))
-    with open(JSON_SAMPLE, 'r') as f1, open(out, 'r') as f2:
+    sheet = load_vd_sheet(f's3://{path_info.s3_bucket}/{path_info.s3_key}')
+    vd.save_json(Path(out), sheet)
+    with open(path_info.local_file, 'r') as f1, open(out, 'r') as f2:
         assert json.load(f1) == json.load(f2)
 
-
-def test_s3_gzip_roundtrip(tmp_path, s3_resource):
+def test_s3_gzip_roundtrip(tmp_path, s3_setup, path_info):
     '''
     Zip and then upload a sample file to our mock S3 server. Confirm
     that a VisiData round trip handles the decompression and outputs
     the same data.
     '''
-    gzpath = tmp_path / 'sample.json.gz'
     out = tmp_path / 'sample.json'
-    s3_resource.create_bucket(Bucket=BUCKET)
-    obj = s3_resource.Object(BUCKET, f'{KEY}.gz')
-    with open(JSON_SAMPLE, 'rb') as uncompressed, gzip.open(gzpath, 'wb') as compressed:
-        shutil.copyfileobj(uncompressed, compressed)
-    obj.upload_file(str(gzpath))
-    obj.wait_until_exists()
-    visidata_roundtrip(f's3://{BUCKET}/{KEY}.gz', Path(out))
-    with open(JSON_SAMPLE, 'r') as f1, open(out, 'r') as f2:
+    sheet = load_vd_sheet(f's3://{path_info.s3_bucket}/{path_info.s3_key}.gz')
+    vd.save_json(Path(out), sheet)
+    with open(path_info.local_file, 'r') as f1, open(out, 'r') as f2:
         assert json.load(f1) == json.load(f2)
+
+def test_s3_download(tmp_path, s3_setup, path_info):
+    '''Make sure that we can download files and nothing gets
+    lost along the way.
+    '''
+    sheet = load_vd_sheet(f's3://{path_info.s3_bucket}')
+    sheet.download(sheet.rows, Path(tmp_path))
+    vd.sync()
+    assert (
+        {path_info.base_filename, path_info.gzip_filename} <=
+        set(f.name for f in Path(tmp_path).glob('**/*'))
+    )

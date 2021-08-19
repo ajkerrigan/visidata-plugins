@@ -189,6 +189,15 @@ class S3DirSheet(Sheet):
 
         super().reload()
 
+    @asyncthread
+    def download(self, rows, savepath):
+        '''Download files and directories to a local path.
+
+        Recurse through through subdirectories.
+        '''
+        remote_files = [row['Key'] for row in rows]
+        self.fs.download(remote_files, str(savepath), recursive=True)
+
     def open_rows(self, rows):
         '''
         Open new sheets for the target rows.
@@ -322,6 +331,34 @@ S3DirSheet.addCommand(
     'join-rows',
     'sheet.join_rows(selectedRows)',
     'open and join sheets for selected S3 entries',
+)
+S3DirSheet.addCommand(
+    'gx',
+    'download-rows',
+    (
+        'savepath = inputPath("download selected rows to: ", value=".");'
+        'sheet.download(selectedRows, savepath)'
+    ),
+    'download selected files and directories',
+)
+S3DirSheet.addCommand(
+    'x',
+    'download-row',
+    (
+        # Note about the use of `_path.name` here. Given a `visidata.Path`
+        # object `path`, `path._path` is a `pathlib.Path` object.
+        #
+        # `visidata.Path` objects do some fun parsing to pick out
+        # file types and extensions, handle compression transparently,
+        # etc. That parsing leaves the `name` attribute without a file
+        # extension, and makes it a little tricky to tack back on.
+        #
+        # `pathlib.Path` objects have a `name` with the extension intact.
+        # That makes `path._path.name` a convenient default output path.
+        'savepath = inputPath("download to: ", value=Path(cursorRow["Key"])._path.name);'
+        'sheet.download([cursorRow], savepath)'
+    ),
+    'download the file or directory in the cursor row',
 )
 
 addGlobals(globals())
