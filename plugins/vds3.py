@@ -224,14 +224,16 @@ class S3DirSheet(Sheet):
         if self.currentThreads:
             vd.cancelThread(*self.currentThreads)
 
-        join_choice = vd.chooseOne(jointypes)
         sheets = list(self.open_rows(rows))
         for sheet in vd.Progress(sheets):
             sheet.reload()
 
         # Wait for all sheets to fully load before joining them.
+        # 'append' is the only join type that makes sense here,
+        # since we're joining freshly opened sheets with no key
+        # columns.
         vd.sync()
-        vd.push(createJoinedSheet(sheets, jointype=join_choice))
+        vd.push(vd.createJoinedSheet(sheets, jointype='append'))
 
     def refresh_path(self, path=None):
         '''
