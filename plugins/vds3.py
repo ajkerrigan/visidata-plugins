@@ -366,7 +366,7 @@ try:
     vd.addMenuItem('File', 'Toggle versioning', 'toggle-versioning')
     vd.addMenuItem('File', 'Refresh', 'Current path', 'refresh-sheet')
     vd.addMenuItem('File', 'Refresh', 'All', 'refresh-sheet-all')
-    vd.addMenuItem('Row', 'Download', 'Yo momma', 'Current row', 'download-row')
+    vd.addMenuItem('Row', 'Download', 'Current row', 'download-row')
     vd.addMenuItem('Row', 'Download', 'Selected rows', 'download-rows')
     vd.addMenuItem('Data', 'Join', 'Selected rows', 'join-rows')
 except ImportError:
