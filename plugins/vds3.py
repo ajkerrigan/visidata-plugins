@@ -292,29 +292,6 @@ def openurl_s3(p, filetype):
     )
     return vs
 
-def maybe_add_menus():
-    '''Try to add S3-specific menu items.
-
-    Fail gracefully in VisiData versions without menu support (pre-2.6).
-    '''
-
-    try:
-        from visidata import Menu
-
-        # Add sub-menus first, so they're available when we add menu items
-        # below.
-        vd.addMenu(Menu('File', Menu('Refresh')))
-        vd.addMenu(Menu('Row', Menu('Download')))
-
-        vd.addMenuItem('File', 'Toggle versioning', 'toggle-versioning')
-        vd.addMenuItem('File', 'Refresh', 'Current path', 'refresh-sheet')
-        vd.addMenuItem('File', 'Refresh', 'All', 'refresh-sheet-all')
-        vd.addMenuItem('Row', 'Download', 'Current row', 'download-row')
-        vd.addMenuItem('Row', 'Download', 'Selected rows', 'download-rows')
-        vd.addMenuItem('Data', 'Join', 'Selected rows', 'join-rows')
-    except ImportError:
-        vd.status('menu support not detected, skipping menu item setup')
-
 S3DirSheet.addCommand(
     ENTER,
     'open-row',
@@ -380,6 +357,21 @@ S3DirSheet.addCommand(
     'download the file or directory in the cursor row',
 )
 
+# Try to add S3-specific menu items.
+#
+# Fail gracefully in VisiData versions without menu support (pre-2.6).
+try:
+    from visidata import Menu
+
+    vd.addMenuItem('File', 'Toggle versioning', 'toggle-versioning')
+    vd.addMenuItem('File', 'Refresh', 'Current path', 'refresh-sheet')
+    vd.addMenuItem('File', 'Refresh', 'All', 'refresh-sheet-all')
+    vd.addMenuItem('Row', 'Download', 'Yo momma', 'Current row', 'download-row')
+    vd.addMenuItem('Row', 'Download', 'Selected rows', 'download-rows')
+    vd.addMenuItem('Data', 'Join', 'Selected rows', 'join-rows')
+except ImportError:
+    vd.debug('menu support not detected, skipping menu item setup')
+
 def vd_getattr(self, attr):
     '''Fall back to global lookups for missing VisiData attributes.
 
@@ -399,4 +391,3 @@ def vd_getattr(self, attr):
 
 setattr(vd.__class__, '__getattr__', vd_getattr)
 vd.addGlobals(globals())
-maybe_add_menus()
