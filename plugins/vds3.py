@@ -12,14 +12,8 @@ from visidata import (
     Column,
     Path,
     Sheet,
-    addGlobals,
     asyncthread,
-    cancelThread,
-    createJoinedSheet,
     date,
-    getGlobals,
-    jointypes,
-    open_txt,
     vd,
 )
 
@@ -285,12 +279,13 @@ def openurl_s3(p, filetype):
     if not filetype:
         filetype = p.ext or 'txt'
 
-    openfunc = getGlobals().get('open_' + filetype.lower())
+    openfunc = getattr(vd, f'open_{filetype.lower()}')
     if not openfunc:
         vd.warning(f'no loader found for {filetype} files, falling back to txt')
         filetype = 'txt'
-        openfunc = open_txt
+        openfunc = vd.open_txt
 
+    assert callable(openfunc), f'no function/method available to open {p.given}'
     vs = openfunc(p)
     vd.status(
         f'opening {p.given} as {filetype} (version id: {p.version_id or "latest"})'
@@ -385,5 +380,23 @@ S3DirSheet.addCommand(
     'download the file or directory in the cursor row',
 )
 
+def vd_getattr(self, attr):
+    '''Fall back to global lookups for missing VisiData attributes.
+
+    VisiData is gradually replacing global functions with methods on
+    the VisiData (vd) object.
+
+    Let's try to use vd methods everywhere, but fall back to global
+    lookups. This could/should let us use current patterns
+    but also "just work" on older versions.
+
+    Note: Avoiding "private" attributes (starting with _) keeps us
+    from breaking lazy properties.
+    '''
+    if not attr.startswith('_'):
+        return self.getGlobals().get(attr)
+    raise AttributeError(attr)
+
+setattr(vd.__class__, '__getattr__', vd_getattr)
+vd.addGlobals(globals())
 maybe_add_menus()
-addGlobals(globals())
