@@ -1,6 +1,6 @@
-'''
-Allow VisiData to work directly with Amazon S3 paths. Functionality
-is more limited than local paths, but supports:
+'''Allow VisiData to work directly with Amazon S3 paths.
+
+Functionality is more limited than local paths, but supports:
 
 * Navigating among directories (S3 prefixes)
 * Opening supported filetypes, including compressed files
@@ -17,7 +17,7 @@ from visidata import (
     vd,
 )
 
-__version__ = '0.8dev'
+__version__ = '0.8'
 
 vd.option(
     'vds3_endpoint',
@@ -35,8 +35,7 @@ vd.option(
 
 
 class S3Path(Path):
-    '''
-    A Path-like object representing an S3 file (object) or directory (prefix).
+    '''A Path-like object representing an S3 file (object) or directory (prefix).
     '''
 
     _fs = None
@@ -64,9 +63,7 @@ class S3Path(Path):
         self._fs = val
 
     def open(self, *args, **kwargs):
-        '''
-        Open the current S3 path, decompressing along the way if needed.
-        '''
+        '''Open the current S3 path, decompressing along the way if needed.'''
 
         # Default to text mode unless we have a compressed file
         mode = 'rb' if self.compression else 'r'
@@ -97,8 +94,8 @@ class S3Path(Path):
 
 
 class S3DirSheet(Sheet):
-    '''
-    Display a listing of files and directories (objects and prefixes) in an S3 path.
+    '''Display a listing of files and directories (objects and prefixes) in an S3 path.
+
     Allow single or multiple entries to be opened in separate sheets.
     '''
 
@@ -117,8 +114,7 @@ class S3DirSheet(Sheet):
         self.fs = source.fs
 
     def object_display_name(self, _, row):
-        '''
-        Provide a friendly display name for an S3 path.
+        '''Provide a friendly display name for an S3 path.
 
         When listing the contents of a single S3 prefix, the name can chop off
         prefix bits to imitate a directory browser. When glob matching,
@@ -131,9 +127,7 @@ class S3DirSheet(Sheet):
         )
 
     def iterload(self):
-        '''
-        Delegate to the underlying filesystem to fetch S3 entries.
-        '''
+        '''Delegate to the underlying filesystem to fetch S3 entries.'''
         list_func = self.fs.glob if self.use_glob_matching else self.fs.ls
 
         for key in list_func(str(self.source)):
@@ -148,9 +142,7 @@ class S3DirSheet(Sheet):
 
     @asyncthread
     def reload(self):
-        '''
-        Reload the current S3 directory (prefix) listing.
-        '''
+        '''Reload the current S3 directory (prefix) listing.'''
         self.columns = []
 
         if not (
@@ -193,9 +185,7 @@ class S3DirSheet(Sheet):
         self.fs.download(remote_files, str(savepath), recursive=True)
 
     def open_rows(self, rows):
-        '''
-        Open new sheets for the target rows.
-        '''
+        '''Open new sheets for the target rows.'''
         return (
             vd.openSource(
                 S3Path(
@@ -208,16 +198,7 @@ class S3DirSheet(Sheet):
         )
 
     def join_rows(self, rows):
-        '''
-        Open new sheets for the target rows and combine their contents.
-        Use a chooser to prompt for the join method.
-        '''
-
-        # Cancel threads before beginning a join, to prevent unpredictable
-        # behavior in the chooser UI.
-        if self.currentThreads:
-            vd.cancelThread(*self.currentThreads)
-
+        '''Open new sheets for the target rows and concatenate their contents.'''
         sheets = list(self.open_rows(rows))
         for sheet in vd.Progress(sheets):
             sheet.reload()
@@ -230,17 +211,15 @@ class S3DirSheet(Sheet):
         vd.push(vd.createJoinedSheet(sheets, jointype='append'))
 
     def refresh_path(self, path=None):
-        '''
-        Clear the s3fs cache for the given path and reload. By default, clear
-        the entire cache.
+        '''Clear the s3fs cache for the given path and reload.
+
+        By default, clear the entire cache.
         '''
         self.fs.invalidate_cache(path)
         self.reload()
 
     def toggle_versioning(self):
-        '''
-        Enable or disable support for S3 versioning.
-        '''
+        '''Enable or disable support for S3 versioning.'''
         self.version_aware = not self.version_aware
         self.fs.version_aware = self.version_aware
         vd.status(f's3 versioning {"enabled" if self.version_aware else "disabled"}')
@@ -251,9 +230,10 @@ class S3DirSheet(Sheet):
 
 
 def openurl_s3(p, filetype):
-    '''
-    Open a sheet for an S3 path. S3 directories (prefixes) require special handling,
-    but files (objects) can use standard VisiData "open" functions.
+    '''Open a sheet for an S3 path.
+
+    S3 directories (prefixes) require special handling, but files (objects)
+    can use standard VisiData "open" functions.
     '''
 
     # Non-obvious behavior here: For the default case, we don't want to send
