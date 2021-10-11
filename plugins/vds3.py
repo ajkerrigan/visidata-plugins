@@ -17,7 +17,7 @@ from visidata import (
     vd,
 )
 
-__version__ = '0.8'
+__version__ = '0.9'
 
 vd.option(
     'vds3_endpoint',
@@ -121,9 +121,9 @@ class S3DirSheet(Sheet):
         include the full key name for each entry.
         '''
         return (
-            row.get('Key')
+            row.get('name')
             if self.use_glob_matching
-            else row.get('Key').rpartition('/')[2]
+            else row.get('name').rpartition('/')[2]
         )
 
     def iterload(self):
@@ -133,9 +133,9 @@ class S3DirSheet(Sheet):
         for key in list_func(str(self.source)):
             if self.version_aware and self.fs.isfile(key):
                 yield from (
-                    {**obj_version, 'Key': key, 'type': 'file'}
+                    {**obj_version, 'name': key, 'type': 'file'}
                     for obj_version in self.fs.object_version_info(key)
-                    if key.partition('/')[2] == obj_version['Key']
+                    if key.partition('/')[2] == obj_version['name']
                 )
             else:
                 yield self.fs.stat(key)
@@ -155,7 +155,7 @@ class S3DirSheet(Sheet):
         for col in (
             Column('name', getter=self.object_display_name),
             Column('type', getter=lambda _, row: row.get('type')),
-            Column('size', type=int, getter=lambda _, row: row.get('Size')),
+            Column('size', type=int, getter=lambda _, row: row.get('size')),
             Column('modtime', type=date, getter=lambda _, row: row.get('LastModified')),
         ):
             self.addColumn(col)
@@ -181,7 +181,7 @@ class S3DirSheet(Sheet):
 
         Recurse through through subdirectories.
         '''
-        remote_files = [row['Key'] for row in rows]
+        remote_files = [row['name'] for row in rows]
         self.fs.download(remote_files, str(savepath), recursive=True)
 
     def open_rows(self, rows):
@@ -189,7 +189,7 @@ class S3DirSheet(Sheet):
         return (
             vd.openSource(
                 S3Path(
-                    "s3://{}".format(row["Key"]),
+                    "s3://{}".format(row["name"]),
                     version_aware=self.version_aware,
                     version_id=row.get("VersionId"),
                 )
@@ -331,7 +331,7 @@ S3DirSheet.addCommand(
         #
         # `pathlib.Path` objects have a `name` with the extension intact.
         # That makes `path._path.name` a convenient default output path.
-        'savepath = inputPath("download to: ", value=Path(cursorRow["Key"])._path.name);'
+        'savepath = inputPath("download to: ", value=Path(cursorRow["name"])._path.name);'
         'sheet.download([cursorRow], savepath)'
     ),
     'download the file or directory in the cursor row',
