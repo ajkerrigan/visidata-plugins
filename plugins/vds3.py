@@ -135,7 +135,7 @@ class S3DirSheet(Sheet):
                 yield from (
                     {**obj_version, 'name': key, 'type': 'file'}
                     for obj_version in self.fs.object_version_info(key)
-                    if key.partition('/')[2] == obj_version['name']
+                    if key.partition('/')[2] == obj_version['Key']
                 )
             else:
                 yield self.fs.stat(key)
