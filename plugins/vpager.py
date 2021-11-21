@@ -9,8 +9,8 @@ vd.option("vpager_cmd", "", "external command for displaying cell contents")
 
 
 @Column.api
-def pageValue(col, row):
-    pager = vd.options.vpager_cmd or os.environ.get("PAGER", which("less"))
+def pageValue(col, row, cmd=None):
+    pager = cmd or vd.options.vpager_cmd or os.environ.get("PAGER", which("less"))
     with SuspendCurses():
         return subprocess.run(
             shlex.split(pager), input=str(col.getValue(row)), encoding="utf8"
