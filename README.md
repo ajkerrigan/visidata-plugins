@@ -237,7 +237,10 @@ The `autofake` functionality can save a lot of time if you repeatedly generate f
 
 ### Overview
 
-For cells that contain long strings, it can sometimes be easier to pass the value into an external viewer rather than relying on VisiData's line wrapping. This plugin lets `z^O` open a cell value in the system pager (the value of the `PAGER` environment variable, or `less` by default).
+For cells that contain long strings, it can sometimes be easier to pass the value into an external
+viewer rather than relying on VisiData's line wrapping. This plugin supports arbitrary external
+commands. Unless otherwise specified it relies on the `PAGER` environment variable, and defaults to
+`less`.
 
 ### Installation
 
@@ -247,9 +250,36 @@ For cells that contain long strings, it can sometimes be easier to pass the valu
   * Add `import plugins.vpager` to `~/.visidata/plugins/__init__.py`
   * Add `import plugins` to `~/.visidatarc` if it is not there already
 
+* Define keybindings or options in your `~/.visidatarc` file. Examples:
+
+```python
+from visidata import BaseSheet, vd
+
+# Use spacebar as a custom command prefix, and shuffle other bindings
+# around to accommodate that.
+BaseSheet.unbindkey(' ')
+vd.allPrefixes.append(' ')
+vd.bindkeys[':'] = {'BaseSheet': 'exec-longname'}
+BaseSheet.bindkey(' ;', 'split-col')
+
+# Tell `open-cell-pager` to invoke `bat` rather than $PAGER
+vd.options.vpager_cmd = '/usr/bin/env bat --paging=always'
+
+# Space+Enter: Open a cell's values with the default viewer - `vpager_cmd`
+#              if it's defined, otherwise $PAGER.
+#
+# Space+m: Open a cell's value in `glow` for prettier rendered markdown
+#          in the terminal.
+BaseSheet.bindkey(" Enter", "open-cell-pager")
+BaseSheet.addCommand(" m", "open-cell-markdown", "cursorCol.pageValue(cursorRow, cmd='glow -p')")
+```
+
 ### Usage
 
-Navigate to a cell with a long value and hit `z^O` (`z`, `Ctrl-o`) to open it with the default system pager. To open with a different program, update your `PAGER` environment variable.
+Navigate to a cell with a long value, and use the `View` --> `Open cell with` menu to open that cell
+with an external program.
+
+If you've defined custom keys for the `open-cell-*` group of commands, use those instead of menus.
 
 ## debugging_helpers: Integrate VisiData with debugging packages
 
