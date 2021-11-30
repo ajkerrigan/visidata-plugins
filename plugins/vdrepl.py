@@ -35,7 +35,7 @@ def openRepl(self):
                 / 'history'
             )
             Path.mkdir(history_file.parent, parents=True, exist_ok=True)
-            shell = InteractiveShellEmbed(
+            shell = InteractiveShellEmbed.instance(
                 history_filename=str(history_file), vi_mode=True,
             )
             shell.python_input.title = 'VisiData IPython REPL (ptipython)'
@@ -51,4 +51,4 @@ def openRepl(self):
             # future invocations get a fresh start.
             InteractiveShellEmbed.clear_instance()
 
-Sheet.addCommand("`", "open-repl", "vd.openRepl()")
+Sheet.addCommand("", "open-repl", "vd.openRepl()")
