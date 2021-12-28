@@ -5,19 +5,15 @@ on:
   - workflow_dispatch
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python: [3.7, 3.9]
-
     steps:
-      - uses: actions/checkout@v1
-      - uses: pre-commit/action@v2.0.0
-        with:
-          extra_args: --from-ref origin/master --to-ref HEAD
+      - uses: actions/checkout@v2
       - name: Setup Python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
       - name: Install Tox and any other packages
