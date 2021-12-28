@@ -5,11 +5,15 @@ from visidata import BaseSheet, ExprColumn, vd
 
 @BaseSheet.api
 def addcol_jmespath(sheet):
-    expr = sheet.inputExpr("new column jmespath expression=")
+    expr = vd.input(
+        'new column jmespath expression=',
+        'jmespath-expr',
+        completer=vd.CompleteExpr(sheet),
+    )
     sheet.addColumnAtCursor(
         ExprColumn(
             expr,
-            expr=f"jmespath.search('{expr}', row)",
+            expr=f'jmespath.search("{expr}", row)',
             curcol=sheet.cursorCol
         )
     )
@@ -17,7 +21,11 @@ def addcol_jmespath(sheet):
 @BaseSheet.api
 def select_by_jmespath(sheet, unselect=False):
     action = 'unselect' if unselect else 'select'
-    expr = sheet.inputExpr(f"{action} by jmespath expression=")
+    expr = vd.input(
+        f'{action} by jmespath expression=',
+        'jmespath-expr',
+        completer=vd.CompleteExpr(sheet),
+    )
 
     match_func = partial(jmespath.search, expr)
     select_func = getattr(sheet, action)
