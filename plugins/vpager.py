@@ -36,5 +36,8 @@ BaseSheet.addCommand(
     "view a cell using an external program",
 )
 
-vd.addMenuItem("View", "Open cell with", "configured pager", "open-cell-pager")
-vd.addMenuItem("View", "Open cell with", "custom pager...", "open-cell-with")
+try:
+    vd.addMenuItem("View", "Open cell with", "configured pager", "open-cell-pager")
+    vd.addMenuItem("View", "Open cell with", "custom pager...", "open-cell-with")
+except AttributeError:
+    vd.debug("menu support not detected, skipping menu item setup")

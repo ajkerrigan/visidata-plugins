@@ -1,42 +1,33 @@
-'''Allow VisiData to work directly with Amazon S3 paths.
+"""Allow VisiData to work directly with Amazon S3 paths.
 
 Functionality is more limited than local paths, but supports:
 
 * Navigating among directories (S3 prefixes)
 * Opening supported filetypes, including compressed files
 * Versioned buckets
-'''
+"""
 
-from visidata import (
-    ENTER,
-    Column,
-    Path,
-    Sheet,
-    asyncthread,
-    date,
-    vd,
-)
+from visidata import ENTER, Column, Path, Sheet, asyncthread, date, vd
 
-__version__ = '0.9'
+__version__ = "0.9"
 
 vd.option(
-    'vds3_endpoint',
-    '',
-    'alternate S3 endpoint, used for local testing or alternative S3-compatible services',
+    "vds3_endpoint",
+    "",
+    "alternate S3 endpoint, used for local testing or alternative S3-compatible services",
     replay=True,
 )
-vd.option('vds3_glob', True, 'enable glob-matching for S3 paths', replay=True)
+vd.option("vds3_glob", True, "enable glob-matching for S3 paths", replay=True)
 vd.option(
-    'vds3_version_aware',
+    "vds3_version_aware",
     False,
-    'show all object versions in a versioned bucket',
+    "show all object versions in a versioned bucket",
     replay=True,
 )
 
 
 class S3Path(Path):
-    '''A Path-like object representing an S3 file (object) or directory (prefix).
-    '''
+    """A Path-like object representing an S3 file (object) or directory (prefix)."""
 
     _fs = None
 
@@ -52,7 +43,7 @@ class S3Path(Path):
 
         if self._fs is None:
             self._fs = S3FileSystem(
-                client_kwargs={'endpoint_url': vd.options.vds3_endpoint or None},
+                client_kwargs={"endpoint_url": vd.options.vds3_endpoint or None},
                 version_aware=self.version_aware,
             )
 
@@ -63,29 +54,31 @@ class S3Path(Path):
         self._fs = val
 
     def open(self, *args, **kwargs):
-        '''Open the current S3 path, decompressing along the way if needed.'''
+        """Open the current S3 path, decompressing along the way if needed."""
 
         # Default to text mode unless we have a compressed file
-        mode = 'rb' if self.compression else 'r'
+        mode = "rb" if self.compression else "r"
 
         fp = self.fs.open(self.given, mode=mode, version_id=self.version_id)
 
         # Workaround for https://github.com/ajkerrigan/visidata-plugins/issues/12
-        if hasattr(fp, 'cache') and fp.cache.size != fp.size:
-            vd.debug(f'updating cache size from {fp.cache.size} to {fp.size} to match object size')
+        if hasattr(fp, "cache") and fp.cache.size != fp.size:
+            vd.debug(
+                f"updating cache size from {fp.cache.size} to {fp.size} to match object size"
+            )
             fp.cache.size = fp.size
 
-        if self.compression == 'gz':
+        if self.compression == "gz":
             import gzip
 
             return gzip.open(fp, *args, **kwargs)
 
-        if self.compression == 'bz2':
+        if self.compression == "bz2":
             import bz2
 
             return bz2.open(fp, *args, **kwargs)
 
-        if self.compression == 'xz':
+        if self.compression == "xz":
             import lzma
 
             return lzma.open(fp, *args, **kwargs)
@@ -94,19 +87,19 @@ class S3Path(Path):
 
 
 class S3DirSheet(Sheet):
-    '''Display a listing of files and directories (objects and prefixes) in an S3 path.
+    """Display a listing of files and directories (objects and prefixes) in an S3 path.
 
     Allow single or multiple entries to be opened in separate sheets.
-    '''
+    """
 
     def __init__(self, name, source, version_aware=None):
         import re
 
         super().__init__(name=name, source=source)
-        self.rowtype = 'files'
+        self.rowtype = "files"
         self.nKeys = 1
         self.use_glob_matching = vd.options.vds3_glob and re.search(
-            r'[*?\[\]]', self.source.given
+            r"[*?\[\]]", self.source.given
         )
         self.version_aware = (
             vd.options.vds3_version_aware if version_aware is None else version_aware
@@ -114,35 +107,35 @@ class S3DirSheet(Sheet):
         self.fs = source.fs
 
     def object_display_name(self, _, row):
-        '''Provide a friendly display name for an S3 path.
+        """Provide a friendly display name for an S3 path.
 
         When listing the contents of a single S3 prefix, the name can chop off
         prefix bits to imitate a directory browser. When glob matching,
         include the full key name for each entry.
-        '''
+        """
         return (
-            row.get('name')
+            row.get("name")
             if self.use_glob_matching
-            else row.get('name').rpartition('/')[2]
+            else row.get("name").rpartition("/")[2]
         )
 
     def iterload(self):
-        '''Delegate to the underlying filesystem to fetch S3 entries.'''
+        """Delegate to the underlying filesystem to fetch S3 entries."""
         list_func = self.fs.glob if self.use_glob_matching else self.fs.ls
 
         for key in list_func(str(self.source)):
             if self.version_aware and self.fs.isfile(key):
                 yield from (
-                    {**obj_version, 'name': key, 'type': 'file'}
+                    {**obj_version, "name": key, "type": "file"}
                     for obj_version in self.fs.object_version_info(key)
-                    if key.partition('/')[2] == obj_version['Key']
+                    if key.partition("/")[2] == obj_version["Key"]
                 )
             else:
                 yield self.fs.stat(key)
 
     @asyncthread
     def reload(self):
-        '''Reload the current S3 directory (prefix) listing.'''
+        """Reload the current S3 directory (prefix) listing."""
         self.columns = []
 
         if not (
@@ -150,25 +143,25 @@ class S3DirSheet(Sheet):
             or self.fs.exists(self.source.given)
             or self.fs.isdir(self.source.given)
         ):
-            vd.fail(f'unable to open S3 path: {self.source.given}')
+            vd.fail(f"unable to open S3 path: {self.source.given}")
 
         for col in (
-            Column('name', getter=self.object_display_name),
-            Column('type', getter=lambda _, row: row.get('type')),
-            Column('size', type=int, getter=lambda _, row: row.get('size')),
-            Column('modtime', type=date, getter=lambda _, row: row.get('LastModified')),
+            Column("name", getter=self.object_display_name),
+            Column("type", getter=lambda _, row: row.get("type")),
+            Column("size", type=int, getter=lambda _, row: row.get("size")),
+            Column("modtime", type=date, getter=lambda _, row: row.get("LastModified")),
         ):
             self.addColumn(col)
 
         if self.version_aware:
             self.addColumn(
-                Column('latest', type=bool, getter=lambda _, row: row.get('IsLatest'))
+                Column("latest", type=bool, getter=lambda _, row: row.get("IsLatest"))
             )
             self.addColumn(
                 Column(
-                    'version_id',
+                    "version_id",
                     type=str,
-                    getter=lambda _, row: row.get('VersionId'),
+                    getter=lambda _, row: row.get("VersionId"),
                     width=0,
                 )
             )
@@ -177,15 +170,15 @@ class S3DirSheet(Sheet):
 
     @asyncthread
     def download(self, rows, savepath):
-        '''Download files and directories to a local path.
+        """Download files and directories to a local path.
 
         Recurse through through subdirectories.
-        '''
-        remote_files = [row['name'] for row in rows]
+        """
+        remote_files = [row["name"] for row in rows]
         self.fs.download(remote_files, str(savepath), recursive=True)
 
     def open_rows(self, rows):
-        '''Open new sheets for the target rows.'''
+        """Open new sheets for the target rows."""
         return (
             vd.openSource(
                 S3Path(
@@ -198,7 +191,7 @@ class S3DirSheet(Sheet):
         )
 
     def join_rows(self, rows):
-        '''Open new sheets for the target rows and concatenate their contents.'''
+        """Open new sheets for the target rows and concatenate their contents."""
         sheets = list(self.open_rows(rows))
         for sheet in vd.Progress(sheets):
             sheet.reload()
@@ -208,33 +201,33 @@ class S3DirSheet(Sheet):
         # since we're joining freshly opened sheets with no key
         # columns.
         vd.sync()
-        vd.push(vd.createJoinedSheet(sheets, jointype='append'))
+        vd.push(vd.createJoinedSheet(sheets, jointype="append"))
 
     def refresh_path(self, path=None):
-        '''Clear the s3fs cache for the given path and reload.
+        """Clear the s3fs cache for the given path and reload.
 
         By default, clear the entire cache.
-        '''
+        """
         self.fs.invalidate_cache(path)
         self.reload()
 
     def toggle_versioning(self):
-        '''Enable or disable support for S3 versioning.'''
+        """Enable or disable support for S3 versioning."""
         self.version_aware = not self.version_aware
         self.fs.version_aware = self.version_aware
         vd.status(f's3 versioning {"enabled" if self.version_aware else "disabled"}')
         if self.currentThreads:
-            vd.debug(f'cancelling threads before reloading')
+            vd.debug("cancelling threads before reloading")
             vd.cancelThread(*self.currentThreads)
         self.reload()
 
 
 def openurl_s3(p, filetype):
-    '''Open a sheet for an S3 path.
+    """Open a sheet for an S3 path.
 
     S3 directories (prefixes) require special handling, but files (objects)
     can use standard VisiData "open" functions.
-    '''
+    """
 
     # Non-obvious behavior here: For the default case, we don't want to send
     # a custom endpoint to s3fs. However, using None as a default trips up
@@ -244,82 +237,83 @@ def openurl_s3(p, filetype):
 
     p = S3Path(
         str(p.given),
-        version_aware=getattr(p, 'version_aware', vd.options.vds3_version_aware),
-        version_id=getattr(p, 'version_id', None),
+        version_aware=getattr(p, "version_aware", vd.options.vds3_version_aware),
+        version_id=getattr(p, "version_id", None),
     )
 
     p.fs.version_aware = p.version_aware
-    if p.fs.client_kwargs.get('endpoint_url', '') != endpoint:
-        p.fs.client_kwargs = {'endpoint_url': endpoint}
+    if p.fs.client_kwargs.get("endpoint_url", "") != endpoint:
+        p.fs.client_kwargs = {"endpoint_url": endpoint}
         p.fs.connect()
 
     if not p.fs.isfile(str(p.given)):
         return S3DirSheet(p.name, source=p, version_aware=p.version_aware)
 
     if not filetype:
-        filetype = p.ext or 'txt'
+        filetype = p.ext or "txt"
 
-    openfunc = getattr(vd, f'open_{filetype.lower()}')
+    openfunc = getattr(vd, f"open_{filetype.lower()}")
     if not openfunc:
-        vd.warning(f'no loader found for {filetype} files, falling back to txt')
-        filetype = 'txt'
+        vd.warning(f"no loader found for {filetype} files, falling back to txt")
+        filetype = "txt"
         openfunc = vd.open_txt
 
-    assert callable(openfunc), f'no function/method available to open {p.given}'
+    assert callable(openfunc), f"no function/method available to open {p.given}"
     vs = openfunc(p)
     vd.status(
         f'opening {p.given} as {filetype} (version id: {p.version_id or "latest"})'
     )
     return vs
 
+
 S3DirSheet.addCommand(
     ENTER,
-    'open-row',
-    'vd.push(next(sheet.open_rows([cursorRow])))',
-    'open the current S3 entry',
+    "open-row",
+    "vd.push(next(sheet.open_rows([cursorRow])))",
+    "open the current S3 entry",
 )
 S3DirSheet.addCommand(
-    'g' + ENTER,
-    'open-rows',
-    'for vs in sheet.open_rows(selectedRows): vd.push(vs)',
-    'open all selected S3 entries',
+    "g" + ENTER,
+    "open-rows",
+    "for vs in sheet.open_rows(selectedRows): vd.push(vs)",
+    "open all selected S3 entries",
 )
 S3DirSheet.addCommand(
-    'z^R',
-    'refresh-sheet',
-    'sheet.refresh_path(str(sheet.source))',
-    'clear the s3fs cache for this path, then reload',
+    "z^R",
+    "refresh-sheet",
+    "sheet.refresh_path(str(sheet.source))",
+    "clear the s3fs cache for this path, then reload",
 )
 S3DirSheet.addCommand(
-    'gz^R',
-    'refresh-sheet-all',
-    'sheet.refresh_path()',
-    'clear the entire s3fs cache, then reload',
+    "gz^R",
+    "refresh-sheet-all",
+    "sheet.refresh_path()",
+    "clear the entire s3fs cache, then reload",
 )
 S3DirSheet.addCommand(
-    '^V',
-    'toggle-versioning',
-    'sheet.toggle_versioning()',
-    'enable/disable support for S3 versioning',
+    "^V",
+    "toggle-versioning",
+    "sheet.toggle_versioning()",
+    "enable/disable support for S3 versioning",
 )
 S3DirSheet.addCommand(
-    '&',
-    'join-rows',
-    'sheet.join_rows(selectedRows)',
-    'open and join sheets for selected S3 entries',
+    "&",
+    "join-rows",
+    "sheet.join_rows(selectedRows)",
+    "open and join sheets for selected S3 entries",
 )
 S3DirSheet.addCommand(
-    'gx',
-    'download-rows',
+    "gx",
+    "download-rows",
     (
         'savepath = inputPath("download selected rows to: ", value=".");'
-        'sheet.download(selectedRows, savepath)'
+        "sheet.download(selectedRows, savepath)"
     ),
-    'download selected files and directories',
+    "download selected files and directories",
 )
 S3DirSheet.addCommand(
-    'x',
-    'download-row',
+    "x",
+    "download-row",
     (
         # Note about the use of `_path.name` here. Given a `visidata.Path`
         # object `path`, `path._path` is a `pathlib.Path` object.
@@ -332,28 +326,27 @@ S3DirSheet.addCommand(
         # `pathlib.Path` objects have a `name` with the extension intact.
         # That makes `path._path.name` a convenient default output path.
         'savepath = inputPath("download to: ", value=Path(cursorRow["name"])._path.name);'
-        'sheet.download([cursorRow], savepath)'
+        "sheet.download([cursorRow], savepath)"
     ),
-    'download the file or directory in the cursor row',
+    "download the file or directory in the cursor row",
 )
 
 # Try to add S3-specific menu items.
 #
 # Fail gracefully in VisiData versions without menu support (pre-2.6).
 try:
-    from visidata import Menu
+    vd.addMenuItem("File", "Toggle versioning", "toggle-versioning")
+    vd.addMenuItem("File", "Refresh", "Current path", "refresh-sheet")
+    vd.addMenuItem("File", "Refresh", "All", "refresh-sheet-all")
+    vd.addMenuItem("Row", "Download", "Current row", "download-row")
+    vd.addMenuItem("Row", "Download", "Selected rows", "download-rows")
+    vd.addMenuItem("Data", "Join", "Selected rows", "join-rows")
+except AttributeError:
+    vd.debug("menu support not detected, skipping menu item setup")
 
-    vd.addMenuItem('File', 'Toggle versioning', 'toggle-versioning')
-    vd.addMenuItem('File', 'Refresh', 'Current path', 'refresh-sheet')
-    vd.addMenuItem('File', 'Refresh', 'All', 'refresh-sheet-all')
-    vd.addMenuItem('Row', 'Download', 'Current row', 'download-row')
-    vd.addMenuItem('Row', 'Download', 'Selected rows', 'download-rows')
-    vd.addMenuItem('Data', 'Join', 'Selected rows', 'join-rows')
-except ImportError:
-    vd.debug('menu support not detected, skipping menu item setup')
 
 def vd_getattr(self, attr):
-    '''Fall back to global lookups for missing VisiData attributes.
+    """Fall back to global lookups for missing VisiData attributes.
 
     VisiData is gradually replacing global functions with methods on
     the VisiData (vd) object.
@@ -364,10 +357,11 @@ def vd_getattr(self, attr):
 
     Note: Avoiding "private" attributes (starting with _) keeps us
     from breaking lazy properties.
-    '''
-    if not attr.startswith('_'):
+    """
+    if not attr.startswith("_"):
         return self.getGlobals().get(attr)
     raise AttributeError(attr)
 
-setattr(vd.__class__, '__getattr__', vd_getattr)
+
+vd.__class__.__getattr__ = vd_getattr
 vd.addGlobals(globals())

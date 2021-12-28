@@ -6,6 +6,7 @@ import bpython  # noqa
 
 # {{{ combined locals/globals dict
 
+
 class SetPropagatingDict(dict):
     """
     Combine dict into one, with assignments affecting a target dict
@@ -19,6 +20,7 @@ class SetPropagatingDict(dict):
     same as ``globals()``, so propagation doesn't happen at all if the
     debugger is inside a function frame.
     """
+
     def __init__(self, source_dicts, target_dict):
         dict.__init__(self)
         for s in source_dicts[::-1]:
@@ -34,10 +36,13 @@ class SetPropagatingDict(dict):
         dict.__delitem__(self, key)
         del self.target_dict[key]
 
+
 # }}}
+
 
 def pudb_shell(globals, locals):
     ns = SetPropagatingDict([locals, globals], locals)
 
     import bpython.curtsies
+
     bpython.curtsies.main(args=[], locals_=ns)

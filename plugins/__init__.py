@@ -1,1 +1,1 @@
-from . import vds3
+from . import vds3  # noqa F401

@@ -3,18 +3,17 @@ import re
 from contextlib import suppress
 from string import ascii_uppercase, digits
 
-from visidata import BaseSheet, asyncthread, vd
-
 from faker.providers import BaseProvider
 from faker_cloud import AmazonWebServicesProvider
+from visidata import BaseSheet, asyncthread, vd
 
 
 def _isNullFunc():
-    '''
+    """
     isNullFunc is available as a sheet property in newer VisiData releases, but
     was previously a function in the "visidata" module. Try to use the sheet
     property, but fall back to support earlier versions.
-    '''
+    """
     try:
         return vd.sheet.isNullFunc()
     except AttributeError:
@@ -24,7 +23,7 @@ def _isNullFunc():
 
 
 class VdCustomProvider(BaseProvider):
-    '''Bonus faketypes for use with vfake.'''
+    """Bonus faketypes for use with vfake."""
 
     def account_id(self):
         return "123456789012"
@@ -49,13 +48,13 @@ class VdCustomProvider(BaseProvider):
 
 
 try:
-    import plugins.vfake
+    import plugins.vfake  # noqa F401
 
     vd.options.vfake_extra_providers = [AmazonWebServicesProvider, VdCustomProvider]
 except Exception as err:
-    vd.warning(f'Error importing vfake dependency for vfake_extensions: {err}')
+    vd.warning(f"Error importing vfake dependency for vfake_extensions: {err}")
 
-### Helper condition checker functions for autofake
+# Helper condition checker functions for autofake
 
 
 def match(pat):
@@ -85,7 +84,7 @@ def is_private_ip(addr, _):
 
 def is_port(val, colname):
     try:
-        return 0 <= int(val) <= 65535 and 'port' in colname.casefold()
+        return 0 <= int(val) <= 65535 and "port" in colname.casefold()
     except ValueError:
         return False
 
@@ -94,41 +93,43 @@ def is_port(val, colname):
 # on a matcher function. First match wins.
 
 faketype_mapping = {
-    match(r'^i-'): 'instance_id',
-    match(r'^vpc-'): 'vpc_id',
-    match(r'^eni-'): 'eni_id',
-    match(r'^ws-'): 'workspace_id',
-    match(r'^subnet-'): 'subnet_id',
-    match(r'^sg-'): 'security_group_id',
-    match(r'^d-'): 'directory_id',
-    match(r'^wsb-'): 'ws_bundle_id',
-    match(r'^\d{12}$'): 'account_id',
-    is_private_ip: 'ipv4_private',
-    is_public_ip: 'ipv4_public',
-    is_port: 'port_number',
+    match(r"^i-"): "instance_id",
+    match(r"^vpc-"): "vpc_id",
+    match(r"^eni-"): "eni_id",
+    match(r"^ws-"): "workspace_id",
+    match(r"^subnet-"): "subnet_id",
+    match(r"^sg-"): "security_group_id",
+    match(r"^d-"): "directory_id",
+    match(r"^wsb-"): "ws_bundle_id",
+    match(r"^\d{12}$"): "account_id",
+    is_private_ip: "ipv4_private",
+    is_public_ip: "ipv4_public",
+    is_port: "port_number",
 }
 
 
 @asyncthread
 @BaseSheet.api
 def autofake(sheet, cols, rows):
-    '''
+    """
     Try to guess an appropriate vfake faketype for a given column and row set.
     If we find a match, run with it. NO REGERTS.
-    '''
+    """
 
     isNull = _isNullFunc()
     for col in cols:
         faketype = None
         with suppress(StopIteration):
-            next(r for r in rows if not isNull(hint := col.getValue(r)))
+            sample_value = next(
+                hint for r in rows if not isNull(hint := col.getValue(r))
+            )
             faketype = next(
-                v for k, v in faketype_mapping.items() if k(str(hint), col.name)
+                v for k, v in faketype_mapping.items() if k(str(sample_value), col.name)
             )
         if not faketype:
-            vd.warning(f'Could not detect a fake type for column {col.name}')
+            vd.warning(f"Could not detect a fake type for column {col.name}")
             continue
-        vd.status(f'Detected fake type {faketype} for column {col.name}')
+        vd.status(f"Detected fake type {faketype} for column {col.name}")
         vd.addUndoSetValues([col], rows)
         col.setValuesFromFaker(faketype, rows)
 
@@ -136,8 +137,8 @@ def autofake(sheet, cols, rows):
 BaseSheet.bindkey("zf", "setcol-fake")
 BaseSheet.addCommand(
     "gzf",
-    'setcol-fake-all',
+    "setcol-fake-all",
     'cursorCol.setValuesFromFaker(vd.input("faketype: ", type="faketype"), rows)',
 )
-BaseSheet.addCommand('z^F', 'setcol-autofake', f'sheet.autofake([cursorCol], rows)')
-BaseSheet.addCommand('gz^F', 'setcols-autofake', f'sheet.autofake(columns, rows)')
+BaseSheet.addCommand("z^F", "setcol-autofake", "sheet.autofake([cursorCol], rows)")
+BaseSheet.addCommand("gz^F", "setcols-autofake", "sheet.autofake(columns, rows)")

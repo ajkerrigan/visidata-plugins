@@ -4,27 +4,27 @@ from visidata import ALT, ENTER, FreqTableSheet, PyobjSheet, TableSheet, vd
 
 
 class NoContentPlaceholder:
-    emptyRowMessage = 'No content in parent row'
-    emptyCellMessage = 'No content in parent cell'
+    emptyRowMessage = "No content in parent row"
+    emptyCellMessage = "No content in parent cell"
 
     emptyRowSheet = None
     emptyCellSheet = None
 
 
 def _noContent():
-    '''
+    """
     Does the most recent status entry show an attempt to open an
     empty sheet?
-    '''
+    """
     _, last_status_args, _ = vd.statusHistory[-1]
     return any(("no content" in arg for arg in last_status_args))
 
 
 def _replaceDetailSheet(parentRowIdx, openCommand, placeholder):
-    '''
+    """
     Try to refresh a child window with data from the given parent
     row.
-    '''
+    """
     if vd.sheet is placeholder or openCommand in (
         cmd.longname for cmd in vd.sheet.cmdlog_sheet.rows
     ):
@@ -39,27 +39,27 @@ def _replaceDetailSheet(parentRowIdx, openCommand, placeholder):
 
 @TableSheet.api
 def goParentRow(sheet, by):
-    '''
+    """
     While focused in a child "detail" split view, navigate through rows
     in the parent sheet.
-    '''
+    """
 
     parent = vd.sheets[1]
     newIndex = parent.cursorRowIndex + by
     if newIndex < 0:
-        vd.status('Already at the top!')
+        vd.status("Already at the top!")
         return
     elif newIndex >= len(parent.rows):
-        vd.status('Already at the bottom!')
+        vd.status("Already at the bottom!")
         return
 
     if not NoContentPlaceholder.emptyRowSheet:
         NoContentPlaceholder.emptyRowSheet = PyobjSheet(
-            'placeholder', NoContentPlaceholder.emptyRowMessage
+            "placeholder", NoContentPlaceholder.emptyRowMessage
         )
     if not NoContentPlaceholder.emptyCellSheet:
         NoContentPlaceholder.emptyCellSheet = PyobjSheet(
-            'placeholder', NoContentPlaceholder.emptyCellMessage
+            "placeholder", NoContentPlaceholder.emptyCellMessage
         )
 
     # The goal here is to intelligently navigate around a parent window,
@@ -71,10 +71,10 @@ def goParentRow(sheet, by):
     #
     # * When scrolling through parent cells that would yield no child content,
     #   we need a dummy stand-in sheet to keep the child window open.
-    ChildUpdate = namedtuple('ChildUpdate', 'parentRowIdx openCommand placeholder')
+    ChildUpdate = namedtuple("ChildUpdate", "parentRowIdx openCommand placeholder")
     childUpdates = [
-        ChildUpdate(newIndex, 'open-cell', NoContentPlaceholder.emptyCellSheet),
-        ChildUpdate(newIndex, 'open-row', NoContentPlaceholder.emptyRowSheet),
+        ChildUpdate(newIndex, "open-cell", NoContentPlaceholder.emptyCellSheet),
+        ChildUpdate(newIndex, "open-row", NoContentPlaceholder.emptyRowSheet),
     ]
     for childUpdate in childUpdates:
         vs = _replaceDetailSheet(*childUpdate)
@@ -84,17 +84,17 @@ def goParentRow(sheet, by):
 
 @FreqTableSheet.api
 def zoomFreqtblRow(sheet, by):
-    '''
+    """
     Navigate a frequency table sheet, "zooming in" on matching rows from the
     source sheet. Open matching rows in a disposable sheet one level up
     in the stack - while using a split view, this means the non-active
     window is a dedicated zoom pane.
-    '''
+    """
     if sheet.cursorRowIndex == len(sheet.rows) - 1 and by == 1:
-        vd.status('Already at the bottom!')
+        vd.status("Already at the bottom!")
         return
     if sheet.cursorRowIndex == 0 and by == -1:
-        vd.status('Already at the top!')
+        vd.status("Already at the top!")
         return
     sheet.cursorDown(by)
     vs = sheet.openRow(sheet.cursorRow)
@@ -104,9 +104,9 @@ def zoomFreqtblRow(sheet, by):
     vd.sheets.insert(1, vs)
 
 
-TableSheet.addCommand(ALT + 'j', 'next-parent-row', 'sheet.goParentRow(1)')
-TableSheet.addCommand(ALT + 'k', 'prev-parent-row', 'sheet.goParentRow(-1)')
+TableSheet.addCommand(ALT + "j", "next-parent-row", "sheet.goParentRow(1)")
+TableSheet.addCommand(ALT + "k", "prev-parent-row", "sheet.goParentRow(-1)")
 
-FreqTableSheet.addCommand(ALT + 'j', 'zoom-next-freqrow', 'sheet.zoomFreqtblRow(1)')
-FreqTableSheet.addCommand(ALT + 'k', 'zoom-prev-freqrow', 'sheet.zoomFreqtblRow(-1)')
-FreqTableSheet.addCommand(ALT + ENTER, 'zoom-cur-freqrow', 'sheet.zoomFreqtblRow(0)')
+FreqTableSheet.addCommand(ALT + "j", "zoom-next-freqrow", "sheet.zoomFreqtblRow(1)")
+FreqTableSheet.addCommand(ALT + "k", "zoom-prev-freqrow", "sheet.zoomFreqtblRow(-1)")
+FreqTableSheet.addCommand(ALT + ENTER, "zoom-cur-freqrow", "sheet.zoomFreqtblRow(0)")

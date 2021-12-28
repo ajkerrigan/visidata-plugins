@@ -1,4 +1,5 @@
 from functools import partial
+
 import jmespath
 from visidata import BaseSheet, ExprColumn, vd
 
@@ -6,24 +7,21 @@ from visidata import BaseSheet, ExprColumn, vd
 @BaseSheet.api
 def addcol_jmespath(sheet):
     expr = vd.input(
-        'new column jmespath expression=',
-        'jmespath-expr',
+        "new column jmespath expression=",
+        "jmespath-expr",
         completer=vd.CompleteExpr(sheet),
     )
     sheet.addColumnAtCursor(
-        ExprColumn(
-            expr,
-            expr=f'jmespath.search("{expr}", row)',
-            curcol=sheet.cursorCol
-        )
+        ExprColumn(expr, expr=f'jmespath.search("{expr}", row)', curcol=sheet.cursorCol)
     )
+
 
 @BaseSheet.api
 def select_by_jmespath(sheet, unselect=False):
-    action = 'unselect' if unselect else 'select'
+    action = "unselect" if unselect else "select"
     expr = vd.input(
-        f'{action} by jmespath expression=',
-        'jmespath-expr',
+        f"{action} by jmespath expression=",
+        "jmespath-expr",
         completer=vd.CompleteExpr(sheet),
     )
 
@@ -31,23 +29,24 @@ def select_by_jmespath(sheet, unselect=False):
     select_func = getattr(sheet, action)
     select_func(sheet.gatherBy(match_func), progress=False)
 
+
 BaseSheet.addCommand(
-    '',
-    'addcol-jmespath',
-    'sheet.addcol_jmespath()',
-    'create new column from a jmespath expression'
+    "",
+    "addcol-jmespath",
+    "sheet.addcol_jmespath()",
+    "create new column from a jmespath expression",
 )
 BaseSheet.addCommand(
-    '',
-    'select-jmespath',
-    'sheet.select_by_jmespath()',
-    'select rows matching a jmespath expression in any visible column'
+    "",
+    "select-jmespath",
+    "sheet.select_by_jmespath()",
+    "select rows matching a jmespath expression in any visible column",
 )
 BaseSheet.addCommand(
-    '',
-    'unselect-jmespath',
-    'sheet.select_by_jmespath(unselect=True)',
-    'unselect rows matching a jmespath expression in any visible column'
+    "",
+    "unselect-jmespath",
+    "sheet.select_by_jmespath(unselect=True)",
+    "unselect rows matching a jmespath expression in any visible column",
 )
 
 vd.addGlobals(globals())
