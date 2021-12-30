@@ -1,4 +1,5 @@
 from functools import partial
+from hashlib import sha1
 
 import jmespath
 from visidata import BaseSheet, ExprColumn, vd
@@ -11,8 +12,13 @@ def addcol_jmespath(sheet):
         "jmespath-expr",
         completer=vd.CompleteExpr(sheet),
     )
+    # Create a partial function based on the provided jmespath expression,
+    # and add it as a sheet attribute. This is one way to avoid edge cases
+    # when evaluating jmespath expressions that contain nested quotes.
+    partial_attr = f"_jmespath_search_{sha1(expr.encode('utf8')).hexdigest()}"
+    setattr(sheet, partial_attr, partial(jmespath.search, expr))
     sheet.addColumnAtCursor(
-        ExprColumn(expr, expr=f'jmespath.search("{expr}", row)', curcol=sheet.cursorCol)
+        ExprColumn(expr, expr=f"sheet.{partial_attr}(row)", curcol=sheet.cursorCol)
     )
 
 
