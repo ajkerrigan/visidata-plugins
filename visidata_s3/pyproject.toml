@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "visidata_s3"
+version = "1.0.0"
+description = "VisiData plugin for working with Amazon S3."
+authors = ["AJ Kerrigan <aj@speckledmonkey.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+visidata = "^2.0"
+s3fs = "^2021.11.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+pytest-env = "^0.6.2"
+moto = {extras = ["server"], version = "^2.3.0"}
+awscli-plugin-endpoint = "^0.4"
+
+[tool.poetry.plugins."visidata.plugin"]
+"vds3" = "visidata_s3"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
