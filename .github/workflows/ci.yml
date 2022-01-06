@@ -10,6 +10,9 @@ jobs:
     strategy:
       matrix:
         python: [3.7, 3.9]
+    defaults:
+      run:
+        working-directory: visidata_s3
     steps:
       - uses: actions/checkout@v2
       - name: Setup Python
