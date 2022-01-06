@@ -1,9 +1,10 @@
 [tool.poetry]
 name = "visidata_s3"
-version = "1.0.0"
+version = "1.0.1pre"
 description = "VisiData plugin for working with Amazon S3."
 authors = ["AJ Kerrigan <aj@speckledmonkey.com>"]
 license = "MIT"
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.7"
