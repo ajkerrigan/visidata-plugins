@@ -26,4 +26,4 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Run tests
-        run: poetry run -sv visidata_s3/tests
+        run: poetry run -sv tests
