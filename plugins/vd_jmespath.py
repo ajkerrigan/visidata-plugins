@@ -7,10 +7,17 @@ from visidata import BaseSheet, ExprColumn, vd
 
 @BaseSheet.api
 def addcol_jmespath(sheet):
+    try:
+        completer = vd.CompleteExpr
+    except AttributeError:
+        vd.debug("falling back to global for CompleteExpr")
+        from visidata import CompleteExpr
+
+        completer = CompleteExpr
     expr = vd.input(
         "new column jmespath expression=",
         "jmespath-expr",
-        completer=vd.CompleteExpr(sheet),
+        completer=completer(sheet),
     )
     # Create a partial function based on the provided jmespath expression,
     # and add it as a sheet attribute. This is one way to avoid edge cases
