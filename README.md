@@ -333,8 +333,6 @@ commands. Unless otherwise specified it relies on the `PAGER` environment variab
 * Define keybindings or options in your `~/.visidatarc` file. Examples:
 
 ```python
-from visidata import BaseSheet, vd
-
 # Use spacebar as a custom command prefix, and shuffle other bindings
 # around to accommodate that.
 BaseSheet.unbindkey(' ')
@@ -440,14 +438,12 @@ a matter of personal preference and the risk of collisions is high. Instead, you
 shortcuts in `~/.visidatarc`. For reference, mine look like this:
 
 ```python
-from visidata import vd, ALT, ENTER
+TableSheet.bindkey(ALT + "j", "next-parent-row")
+TableSheet.bindkey(ALT + "k", "prev-parent-row")
 
-vd.TableSheet.bindkey(ALT + "j", "next-parent-row")
-vd.TableSheet.bindkey(ALT + "k", "prev-parent-row")
-
-vd.FreqTableSheet.bindkey(ALT + "j", "zoom-next-freqrow")
-vd.FreqTableSheet.bindkey(ALT + "k", "zoom-prev-freqrow")
-vd.FreqTableSheet.bindkey(ALT + ENTER, "zoom-cur-freqrow")
+FreqTableSheet.bindkey(ALT + "j", "zoom-next-freqrow")
+FreqTableSheet.bindkey(ALT + "k", "zoom-prev-freqrow")
+FreqTableSheet.bindkey(ALT + ENTER, "zoom-cur-freqrow")
 ```
 
 So `j` and `k` move in the current sheet, but with `Alt` they move in a parent sheet instead.
