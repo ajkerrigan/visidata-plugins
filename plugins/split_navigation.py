@@ -1,17 +1,23 @@
-from collections import namedtuple
+from functools import lru_cache
 
-from visidata import ALT, ENTER, FreqTableSheet, PyobjSheet, TableSheet, vd
+from visidata import FreqTableSheet, PyobjSheet, TableSheet, vd
 
+__version__ = "0.1"
 
-class NoContentPlaceholder:
-    emptyRowMessage = "No content in parent row"
-    emptyCellMessage = "No content in parent cell"
-
-    emptyRowSheet = None
-    emptyCellSheet = None
+# A "child" sheet may come from diving into different entities of a parent sheet
+CHILD_ENTITY_TYPES = ["cell", "row"]
 
 
-def _noContent():
+@lru_cache
+def _placeholderSheet(entityType):
+    """
+    An empty sheet to stand in when scrolling to a parent entity (row/cell)
+    with no content. Create these once per entity type only when needed.
+    """
+    return PyobjSheet("placeholder", f"No content in parent {entityType}")
+
+
+def _noContentStatus():
     """
     Does the most recent status entry show an attempt to open an
     empty sheet?
@@ -20,11 +26,14 @@ def _noContent():
     return any(("no content" in arg for arg in last_status_args))
 
 
-def _replaceDetailSheet(parentRowIdx, openCommand, placeholder):
+def _replaceDetailSheet(parentRowIdx, entityType):
     """
-    Try to refresh a child window with data from the given parent
-    row.
+    Try to refresh a child window with data from a given parent
+    entity (row or cell).
     """
+    placeholder = _placeholderSheet(entityType)
+    openCommand = f"open-{entityType}"
+
     if vd.sheet is placeholder or openCommand in (
         cmd.longname for cmd in vd.sheet.cmdlog_sheet.rows
     ):
@@ -32,15 +41,15 @@ def _replaceDetailSheet(parentRowIdx, openCommand, placeholder):
         vd.remove(vd.sheet)
         parent.cursorRowIndex = parentRowIdx
         parent.execCommand(openCommand)
-        if vd.sheet is parent and _noContent():
-            vd.push(NoContentPlaceholder.emptyCellSheet)
+        if vd.sheet is parent and _noContentStatus():
+            vd.push(placeholder)
         return vd.sheet
 
 
 @TableSheet.api
-def goParentRow(sheet, by):
+def goParentRow(_, by):
     """
-    While focused in a child "detail" split view, navigate through rows
+    While focused in a child "detail" sheet, navigate through rows
     in the parent sheet.
     """
 
@@ -53,31 +62,19 @@ def goParentRow(sheet, by):
         vd.status("Already at the bottom!")
         return
 
-    if not NoContentPlaceholder.emptyRowSheet:
-        NoContentPlaceholder.emptyRowSheet = PyobjSheet(
-            "placeholder", NoContentPlaceholder.emptyRowMessage
-        )
-    if not NoContentPlaceholder.emptyCellSheet:
-        NoContentPlaceholder.emptyCellSheet = PyobjSheet(
-            "placeholder", NoContentPlaceholder.emptyCellMessage
-        )
-
-    # The goal here is to intelligently navigate around a parent window,
+    # The goal here is to navigate around a parent window in a consistent way,
     # updating a child view in the process. Find out whether the current
     # sheet represents a detail view of the cursor _row_ or _cell_ in the
     # parent sheet. Use that to determine how to update the child view.
     #
     # Edge case:
     #
-    # * When scrolling through parent cells that would yield no child content,
-    #   we need a dummy stand-in sheet to keep the child window open.
-    ChildUpdate = namedtuple("ChildUpdate", "parentRowIdx openCommand placeholder")
-    childUpdates = [
-        ChildUpdate(newIndex, "open-cell", NoContentPlaceholder.emptyCellSheet),
-        ChildUpdate(newIndex, "open-row", NoContentPlaceholder.emptyRowSheet),
-    ]
-    for childUpdate in childUpdates:
-        vs = _replaceDetailSheet(*childUpdate)
+    # * When scrolling through parent cells that would yield no child content
+    #   (and therefore not open a sheet), we need a dummy stand-in sheet to
+    #   keep the child window open and avoid breaking things. This happens
+    #   when, for example, the parent cell is an empty list.
+    for entityType in CHILD_ENTITY_TYPES:
+        vs = _replaceDetailSheet(newIndex, entityType)
         if vs:
             break
 
@@ -104,9 +101,9 @@ def zoomFreqtblRow(sheet, by):
     vd.sheets.insert(1, vs)
 
 
-TableSheet.addCommand(ALT + "j", "next-parent-row", "sheet.goParentRow(1)")
-TableSheet.addCommand(ALT + "k", "prev-parent-row", "sheet.goParentRow(-1)")
+TableSheet.addCommand("", "next-parent-row", "sheet.goParentRow(1)")
+TableSheet.addCommand("", "prev-parent-row", "sheet.goParentRow(-1)")
 
-FreqTableSheet.addCommand(ALT + "j", "zoom-next-freqrow", "sheet.zoomFreqtblRow(1)")
-FreqTableSheet.addCommand(ALT + "k", "zoom-prev-freqrow", "sheet.zoomFreqtblRow(-1)")
-FreqTableSheet.addCommand(ALT + ENTER, "zoom-cur-freqrow", "sheet.zoomFreqtblRow(0)")
+FreqTableSheet.addCommand("", "zoom-next-freqrow", "sheet.zoomFreqtblRow(1)")
+FreqTableSheet.addCommand("", "zoom-prev-freqrow", "sheet.zoomFreqtblRow(-1)")
+FreqTableSheet.addCommand("", "zoom-cur-freqrow", "sheet.zoomFreqtblRow(0)")
