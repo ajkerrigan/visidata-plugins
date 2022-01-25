@@ -4,20 +4,52 @@
 
 Custom plugins for https://github.com/saulpw/visidata/
 
-* [vds3](#vds3-open-amazon-s3-paths-and-objects): Open Amazon S3 paths and objects
-* [kvpairs](#kvpairs-toggle-values-between-lists-of-keyvalue-pairs-and-dicts): Toggle between
-  key/value pairs and dicts
-* [vfake_extensions](#vfake_extensions-niche-addons-for-vfake): Niche addons for
-  [vfake](https://github.com/saulpw/visidata/blob/develop/plugins/vfake.py)
-* [vpager](#vpager-open-long-cell-values-in-the-system-pager): Open long cell values in the system
-  pager
-* [debugging_helpers](#debugging_helpers-integrate-visidata-with-debugging-packages): Integrate
-  VisiData with debugging packages
-* [split_navigation](#split_navigation-navigation-keybindings-for-masterdetail-split-views):
-  Navigation keybindings for master/detail split views
-* [vd_jmespath](#vd_jmespath-evaluate-jmespath-expressions): Use JMESPath expressions to add columns
-  or toggle row selection
-
+- [vds3: Open Amazon S3 paths and objects](#vds3-open-amazon-s3-paths-and-objects)
+  - [Demo](#demo)
+  - [Installation](#installation)
+    - [Install VisiData](#install-visidata)
+    - [Install the Plugin](#install-the-plugin)
+      - [Using the Plugin Framework (Recommended)](#using-the-plugin-framework-recommended)
+      - [Manually](#manually)
+  - [Usage](#usage)
+    - [Open a file stored in S3](#open-a-file-stored-in-s3)
+    - [List all buckets](#list-all-buckets)
+    - [Browse a bucket's contents](#browse-a-buckets-contents)
+    - [Browse all CSV files in a bucket (glob matching)](#browse-all-csv-files-in-a-bucket-glob-matching)
+    - [Browse previous versions of objects](#browse-previous-versions-of-objects)
+    - [Join/combine objects](#joincombine-objects)
+  - [Configuration](#configuration)
+  - [Status](#status)
+- [kvpairs: Toggle values between lists of Key/Value pairs and dicts](#kvpairs-toggle-values-between-lists-of-keyvalue-pairs-and-dicts)
+  - [Overview](#overview)
+  - [Installation](#installation-1)
+- [vfake_extensions: Niche addons for vfake](#vfake_extensions-niche-addons-for-vfake)
+  - [Overview](#overview-1)
+  - [Installation](#installation-2)
+  - [Usage](#usage-1)
+  - [Autofake Demo](#autofake-demo)
+- [vpager: Open long cell values in the system pager](#vpager-open-long-cell-values-in-the-system-pager)
+  - [Overview](#overview-2)
+  - [Installation](#installation-3)
+  - [Usage](#usage-2)
+- [debugging_helpers: Integrate VisiData with debugging packages](#debugging_helpers-integrate-visidata-with-debugging-packages)
+  - [Overview](#overview-3)
+  - [Workflow](#workflow)
+  - [Notes](#notes)
+  - [Demo](#demo-1)
+- [parent_navigation: Helpers for navigating a parent sheet from its child](#parent_navigation-helpers-for-navigating-a-parent-sheet-from-its-child)
+  - [Overview](#overview-4)
+  - [Installation](#installation-4)
+  - [Usage](#usage-3)
+  - [Demos](#demos)
+    - [Parent/Child Sheet Navigation](#parentchild-sheet-navigation)
+    - [Frequency Table "Zoom" Navigation](#frequency-table-zoom-navigation)
+- [vd_jmespath: Evaluate JMESPath expressions](#vd_jmespath-evaluate-jmespath-expressions)
+  - [Overview](#overview-5)
+  - [Installation](#installation-5)
+  - [Usage](#usage-4)
+- [Contributing](#contributing)
+- [Acknowledgements](#acknowledgements)
 ## vds3: Open Amazon S3 paths and objects
 
 ### Demo
@@ -385,7 +417,9 @@ shortcut.
 
 [![asciicast](https://asciinema.org/a/jFKTO1PNyHrqtecJcvYiFQQWh.svg)](https://asciinema.org/a/jFKTO1PNyHrqtecJcvYiFQQWh)
 
-## split_navigation: Navigation keybindings for master/detail split views
+<a name="split_navigation-navigation-keybindings-for-masterdetail-split-views"></a>
+
+## parent_navigation: Helpers for navigating a parent sheet from its child
 
 ### Overview
 
@@ -395,9 +429,39 @@ and a child view of details. In that second case, it can be useful to keep focus
 view while navigating up and down in the parent view. This little plugin sets up keybindings for
 that.
 
+### Installation
+
+1. Copy [parent_navigation.py](plugins/parent_navigation.py) to your local `~/.visidata/plugins` directory.
+1. Add `import plugins.parent_navigation` to `~/.visidata/plugins/__init__.py`
+1. Add `import plugins` to `~/.visidatarc` if it is not there already
+
+This plugin adds commands but does _not_ define its own keyboard shortcuts for them, since those are
+a matter of personal preference and the risk of collisions is high. Instead, you can define your own
+shortcuts in `~/.visidatarc`. For reference, mine look like this:
+
+```python
+from visidata import vd, ALT, ENTER
+
+vd.TableSheet.bindkey(ALT + "j", "next-parent-row")
+vd.TableSheet.bindkey(ALT + "k", "prev-parent-row")
+
+vd.FreqTableSheet.bindkey(ALT + "j", "zoom-next-freqrow")
+vd.FreqTableSheet.bindkey(ALT + "k", "zoom-prev-freqrow")
+vd.FreqTableSheet.bindkey(ALT + ENTER, "zoom-cur-freqrow")
+```
+
+So `j` and `k` move in the current sheet, but with `Alt` they move in a parent sheet instead.
+
+### Usage
+
+* With a sheet open in VisiData, dive into the details of a row (`Enter`) or cell (`z` + `Enter`)
+* Use the `next-parent-row` and `prev-parent-row` commands to navigate a parent sheet, refreshing
+  the child sheet as you go
+  * **Note:** This pairs nicely with VisiData's support for [split views](https://www.visidata.org/docs/split/),
+    which allow you to see the parent and child sheets at the same time.
 ### Demos
 
-#### Master/Detail Split Navigation
+#### Parent/Child Sheet Navigation
 
 [![asciicast](https://asciinema.org/a/C18e5aAOwKXTAr4njekNQXWLt.svg)](https://asciinema.org/a/C18e5aAOwKXTAr4njekNQXWLt)
 
