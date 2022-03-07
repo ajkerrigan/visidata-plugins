@@ -9,6 +9,8 @@ import moto.server
 import pytest
 from visidata import AttrDict, Path, vd
 
+from .common import load_vd_sheet
+
 
 @pytest.fixture(scope="session", autouse=True)
 def path_info():
@@ -63,18 +65,6 @@ def s3_setup(moto_s3, tmp_path_factory, path_info):
         shutil.copyfileobj(uncompressed, compressed)
     obj.upload_file(str(gzpath))
     obj.wait_until_exists()
-
-
-def load_vd_sheet(inpath):
-    """
-    Load a file with VisiData, and return the
-    sheet object.
-    """
-    vd.loadConfigAndPlugins(AttrDict({}))
-    sheet = vd.openSource(inpath)
-    sheet.reload()
-    vd.sync()
-    return sheet
 
 
 def test_local_roundtrip(tmp_path, path_info):

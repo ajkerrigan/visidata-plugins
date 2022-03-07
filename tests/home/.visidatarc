@@ -1,3 +1,4 @@
+import plugins.vd_toml
 import plugins.vds3
 from visidata import vd
 
