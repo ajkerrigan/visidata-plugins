@@ -46,6 +46,9 @@ class VdCustomProvider(BaseProvider):
     def eni_id(self):
         return self.hexify(f"eni-{'^' * 17}")
 
+    def security_group_id(self):
+        return self.hexify(f"sg-{'^' * 17}")
+
 
 try:
     import plugins.vfake  # noqa F401
