@@ -201,7 +201,12 @@ class S3DirSheet(Sheet):
         # since we're joining freshly opened sheets with no key
         # columns.
         vd.sync()
-        vd.push(vd.createJoinedSheet(sheets, jointype="append"))
+        try:
+            # VisiData 2.9+
+            vd.push(sheets[0].openJoin(sheets[1:], jointype="append"))
+        except AttributeError:
+            # VisiData <2.9
+            vd.push(vd.createJoinedSheet(sheets, jointype="append"))
 
     def refresh_path(self, path=None):
         """Clear the s3fs cache for the given path and reload.
