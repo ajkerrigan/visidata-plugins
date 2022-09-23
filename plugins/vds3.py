@@ -9,7 +9,7 @@ Functionality is more limited than local paths, but supports:
 
 from visidata import ENTER, Column, Path, Sheet, asyncthread, date, vd
 
-__version__ = "0.9"
+__version__ = "0.10"
 
 vd.option(
     "vds3_endpoint",
