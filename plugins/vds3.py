@@ -273,43 +273,43 @@ def openurl_s3(p, filetype):
 
 S3DirSheet.addCommand(
     ENTER,
-    "open-row",
+    "s3-open-row",
     "vd.push(next(sheet.open_rows([cursorRow])))",
     "open the current S3 entry",
 )
 S3DirSheet.addCommand(
     "g" + ENTER,
-    "open-rows",
+    "s3-open-rows",
     "for vs in sheet.open_rows(selectedRows): vd.push(vs)",
     "open all selected S3 entries",
 )
 S3DirSheet.addCommand(
     "z^R",
-    "refresh-sheet",
+    "s3-refresh-sheet",
     "sheet.refresh_path(str(sheet.source))",
     "clear the s3fs cache for this path, then reload",
 )
 S3DirSheet.addCommand(
     "gz^R",
-    "refresh-sheet-all",
+    "s3-refresh-sheet-all",
     "sheet.refresh_path()",
     "clear the entire s3fs cache, then reload",
 )
 S3DirSheet.addCommand(
     "^V",
-    "toggle-versioning",
+    "s3-toggle-versioning",
     "sheet.toggle_versioning()",
     "enable/disable support for S3 versioning",
 )
 S3DirSheet.addCommand(
     "&",
-    "join-rows",
+    "s3-join-rows",
     "sheet.join_rows(selectedRows)",
     "open and join sheets for selected S3 entries",
 )
 S3DirSheet.addCommand(
     "gx",
-    "download-rows",
+    "s3-download-rows",
     (
         'savepath = inputPath("download selected rows to: ", value=".");'
         "sheet.download(selectedRows, savepath)"
@@ -318,7 +318,7 @@ S3DirSheet.addCommand(
 )
 S3DirSheet.addCommand(
     "x",
-    "download-row",
+    "s3-download-row",
     (
         # Note about the use of `_path.name` here. Given a `visidata.Path`
         # object `path`, `path._path` is a `pathlib.Path` object.
