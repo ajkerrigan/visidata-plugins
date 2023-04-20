@@ -23,7 +23,7 @@ Custom plugins for https://github.com/saulpw/visidata/
 - [kvpairs: Toggle values between lists of Key/Value pairs and dicts](#kvpairs-toggle-values-between-lists-of-keyvalue-pairs-and-dicts)
   - [Overview](#overview)
   - [Installation](#installation-1)
-- [vfake_extensions: Niche addons for vfake](#vfake_extensions-niche-addons-for-vfake)
+- [vfake\_extensions: Niche addons for vfake](#vfake_extensions-niche-addons-for-vfake)
   - [Overview](#overview-1)
   - [Installation](#installation-2)
   - [Usage](#usage-1)
@@ -32,19 +32,19 @@ Custom plugins for https://github.com/saulpw/visidata/
   - [Overview](#overview-2)
   - [Installation](#installation-3)
   - [Usage](#usage-2)
-- [debugging_helpers: Integrate VisiData with debugging packages](#debugging_helpers-integrate-visidata-with-debugging-packages)
+- [debugging\_helpers: Integrate VisiData with debugging packages](#debugging_helpers-integrate-visidata-with-debugging-packages)
   - [Overview](#overview-3)
   - [Workflow](#workflow)
   - [Notes](#notes)
   - [Demo](#demo-1)
-- [parent_navigation: Helpers for navigating a parent sheet from its child](#parent_navigation-helpers-for-navigating-a-parent-sheet-from-its-child)
+- [parent\_navigation: Helpers for navigating a parent sheet from its child](#parent_navigation-helpers-for-navigating-a-parent-sheet-from-its-child)
   - [Overview](#overview-4)
   - [Installation](#installation-4)
   - [Usage](#usage-3)
   - [Demos](#demos)
     - [Parent/Child Sheet Navigation](#parentchild-sheet-navigation)
     - [Frequency Table "Zoom" Navigation](#frequency-table-zoom-navigation)
-- [vd_jmespath: Evaluate JMESPath expressions](#vd_jmespath-evaluate-jmespath-expressions)
+- [vd\_jmespath: Evaluate JMESPath expressions](#vd_jmespath-evaluate-jmespath-expressions)
   - [Overview](#overview-5)
   - [Installation](#installation-5)
   - [Usage](#usage-4)
@@ -53,6 +53,9 @@ Custom plugins for https://github.com/saulpw/visidata/
 ## vds3: Open Amazon S3 paths and objects
 
 ### Demo
+
+**Note:** This plugin's functionality has been migrated into VisiData core. If you're using VisiData v2.12dev or higher,
+you no longer need this plugin!
 
 Browse S3 with an interface like a console-based file explorer:
 
