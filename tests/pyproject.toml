@@ -15,6 +15,7 @@ boto3 = "~1"
 s3fs = "^2022.2.0"
 awscli-plugin-endpoint = "^0.4"
 moto = {extras = ["server"], version = "^3.0.6"}
+rich = "*"
 
 [tool.poetry.dev-dependencies]
 
