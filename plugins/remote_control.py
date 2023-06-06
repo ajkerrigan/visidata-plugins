@@ -43,13 +43,14 @@ class VisiDataRemoteControlHandler(socketserver.BaseRequestHandler):
     """
 
     def handle(self):
-        data = self.request[0].strip().decode("utf8")
+        data = self.request.recv(1024).strip().decode("utf8")
         error = None
         try:
-            self.server.sheet.execCommand2(RemoteControlCommand(data))
+            result = int(self.server.sheet.execCommand2(RemoteControlCommand(data)))
         except Exception as err:
-            error = err
-        self.server.sheet.addRow(dict(command=data, error=error))
+            result, error = 1, err
+        self.request.sendall(str(result).encode('utf8'))
+        self.server.sheet.addRow(dict(command=data, exit_code=result, error=error))
 
 
 class RemoteControlSheet(Sheet):
@@ -68,12 +69,12 @@ class RemoteControlSheet(Sheet):
     Shut down the socket and remove the file when the sheet closes.
     """
 
-    columns = [ItemColumn("command"), ItemColumn("error")]
+    columns = [ItemColumn("command"), ItemColumn("exit_code"), ItemColumn("error")]
 
     def __init__(self, name):
         super().__init__(name)
         Path("~/.visidata/run").expanduser().mkdir(parents=True, exist_ok=True)
-        self.server = socketserver.UnixDatagramServer(
+        self.server = socketserver.UnixStreamServer(
             str(Path(f"~/.visidata/run/{name}").expanduser()),
             VisiDataRemoteControlHandler,
         )
