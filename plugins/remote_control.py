@@ -9,7 +9,7 @@ vd server://remote_control
 And try controlling it from another tab/window by sending requests to
 the socket:
 
-echo "vd.status('hello from elsewhere!')" | nc -Uuq 0 ~/.visidata/run/remote_control
+echo "vd.status('hello from elsewhere!')" | nc -U ~/.visidata/run/remote_control
 
 Warnings/Limitations:
 
@@ -64,7 +64,7 @@ class RemoteControlSheet(Sheet):
     opens a Unix domain socket at ~/.visidata/run/moo. Clients can
     send VisiData exec strings to that socket, for example:
 
-    echo "vd.status('hello from elsewhere!')" | nc -Uuq 0 ~/.visidata/run/moo
+    echo "vd.status('hello from elsewhere!')" | nc -U ~/.visidata/run/moo
 
     Shut down the socket and remove the file when the sheet closes.
     """
