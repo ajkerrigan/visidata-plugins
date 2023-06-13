@@ -493,7 +493,7 @@ from visidata import BaseSheet, vd
 
 # Use space as a prefix key rather than to execute a command by name.
 vd.bindkeys[':'] = {'BaseSheet': 'exec-longname'}
-vd.allPrefixes.append(' ')
+vd.allPrefixes.append('Space')
 
 # Define JMESPath commands by adding a custom prefix to the built-in
 # addcol/select/unselect commands.
