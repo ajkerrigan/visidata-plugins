@@ -52,7 +52,6 @@ class VisiDataRemoteControlHandler(socketserver.BaseRequestHandler):
         self.request.sendall(str(result).encode('utf8'))
         self.server.sheet.addRow(dict(command=data, exit_code=result, error=error))
 
-
 class RemoteControlSheet(Sheet):
     """A sheet that provides rudimentary remote control features
 
@@ -74,8 +73,12 @@ class RemoteControlSheet(Sheet):
     def __init__(self, name):
         super().__init__(name)
         Path("~/.visidata/run").expanduser().mkdir(parents=True, exist_ok=True)
+        socket_path = Path(f"~/.visidata/run/{name}").expanduser()
+        if socket_path.exists() and socket_path.is_socket():
+            vd.status(f"Replacing existing socket at {socket_path}")
+            socket_path.unlink()
         self.server = socketserver.UnixStreamServer(
-            str(Path(f"~/.visidata/run/{name}").expanduser()),
+            str(socket_path),
             VisiDataRemoteControlHandler,
         )
         self.server.sheet = self
@@ -84,7 +87,7 @@ class RemoteControlSheet(Sheet):
     @asyncthread
     def serve(self):
         self.server.serve_forever()
-        vd.status("server closed")
+        vd.status("Remote control socket closed")
 
 
 @RemoteControlSheet.api
@@ -92,11 +95,11 @@ def confirmQuit(vs, verb="quit"):
     """Try to avoid leaving dangling socket nonsense"""
 
     super(vs.__class__, vs).confirmQuit(verb)
-    vd.status("closing server")
+    vd.status("Closing remote control socket")
     vs.server.shutdown()
     with suppress(OSError, FileNotFoundError):
         sockname = vs.server.socket.getsockname()
-        vd.status(f"removing file {sockname}")
+        vd.status(f"Removing {sockname}")
         Path(sockname).expanduser().unlink()
 
 
