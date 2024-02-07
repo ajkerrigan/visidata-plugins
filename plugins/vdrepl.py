@@ -5,7 +5,7 @@ Launch an embedded ptipython REPL from within VisiData.
 from pathlib import Path
 
 from ptpython.ipython import InteractiveShellEmbed, embed
-from visidata import LazyChainMap, Sheet, SuspendCurses, VisiData, vd
+from visidata import LazyChainMap, Sheet, SuspendCurses, VisiData
 
 
 class Dummy:
@@ -13,18 +13,15 @@ class Dummy:
 
     replayStatus = "dummy"
     someSelectedRows = "dummy"
+    onlySelectedRows = "dummy"
 
 
 @VisiData.api
-def openRepl(self):
+def openRepl(vd):
     """Open a ptipython-based REPL that inherits VisiData's context."""
-    try:
-        # Provide local top-level access to VisiData global and sheet-local
-        # variables, similar to VisiData's `execCommand` context.
-        new_locals = LazyChainMap(Dummy(), vd, vd.sheet)
-        locals().update(new_locals)
-    except Exception as e:
-        vd.exceptionCaught(e)
+
+    def configure(python_input):
+        python_input.title = "VisiData IPython REPL (ptipython)"
 
     with SuspendCurses():
         try:
@@ -35,12 +32,12 @@ def openRepl(self):
                 / "history"
             )
             Path.mkdir(history_file.parent, parents=True, exist_ok=True)
+            locals().update(dict(LazyChainMap(Dummy(), vd.sheet, locals=vd.getGlobals())))
             shell = InteractiveShellEmbed.instance(
                 history_filename=str(history_file),
                 vi_mode=True,
+                configure=configure,
             )
-            shell.python_input.title = "VisiData IPython REPL (ptipython)"
-            shell.python_input.show_exit_confirmation = False
             embed()
         except Exception as e:
             vd.exceptionCaught(e)
