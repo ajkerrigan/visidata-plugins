@@ -25,7 +25,7 @@ def addcol_jmespath(sheet):
     partial_attr = f"_jmespath_search_{sha1(expr.encode('utf8')).hexdigest()}"
     setattr(sheet, partial_attr, partial(jmespath.search, expr))
     sheet.addColumnAtCursor(
-        ExprColumn(expr, expr=f"sheet.{partial_attr}(row)", curcol=sheet.cursorCol)
+        ExprColumn(expr, expr=f"sheet.{partial_attr}(cursorRow)")
     )
 
 
