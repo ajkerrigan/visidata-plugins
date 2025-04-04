@@ -1,7 +1,5 @@
 # VisiData Plugins
 
-![](https://github.com/ajkerrigan/visidata-plugins/workflows/CI%20Tests/badge.svg)
-
 Custom plugins for https://github.com/saulpw/visidata/
 
 - [vds3: Open Amazon S3 paths and objects](#vds3-open-amazon-s3-paths-and-objects)
