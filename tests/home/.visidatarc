@@ -1,5 +1,0 @@
-import plugins.vd_toml
-import plugins.vds3
-from visidata import vd
-
-vd.options.vds3_endpoint = 'http://localhost:3000'
