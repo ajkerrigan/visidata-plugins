@@ -53,6 +53,9 @@ def goParentRow(_, by):
     in the parent sheet.
     """
 
+    if len(vd.sheets) < 2:
+        vd.status('must have at least 2 sheets open')
+        return
     parent = vd.sheets[1]
     newIndex = parent.cursorRowIndex + by
     if newIndex < 0:
